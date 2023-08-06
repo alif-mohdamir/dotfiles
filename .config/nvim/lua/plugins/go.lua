@@ -1,6 +1,6 @@
 -- Options are automatically loaded before lazy.nvim startup
 -- Default options that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/options.lua
--- Made some manual adjustments due some errors being thrown with the lazyvim provided config for go
+-- Add any additional options here
 return {
   {
     "nvim-treesitter/nvim-treesitter",

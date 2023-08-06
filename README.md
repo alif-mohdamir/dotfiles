@@ -6,3 +6,5 @@ Few dot files for tmux, wezterm, and lazyvim config. Scripts inspired by scripts
 2. [wezterm mac install instructions](https://wezfurlong.org/wezterm/install/macos.html)
     - (don't forget the `.zshrc` step) if you want `wezterm-spawner` to work
 3. [lazyvim install](https://www.lazyvim.org/installation)
+
+[Guide for using this repo as a bare repo](https://www.atlassian.com/git/tutorials/dotfiles)

@@ -20,7 +20,7 @@ zstyle ':completion:*' fzf-search-display true
 
 
 # Git autocompletion
-echo 'autoload -Uz compinit && compinit'
+autoload -Uz compinit && compinit
 
 export PATH="/opt/homebrew/opt/mysql-client/bin:$PATH"
 export PKG_CONFIG_PATH="/opt/homebrew/opt/mysql-client/lib/pkgconfig"
@@ -28,6 +28,7 @@ export LDFLAGS="-L/opt/homebrew/opt/mysql-client/lib"
 export CPPFLAGS="-I/opt/homebrew/opt/mysql-client/include"
 
 
+# Enables using dotfiles as a bare repo to source dot files and configs
 alias config='/usr/bin/git --git-dir=$HOME/dotfiles/ --work-tree=$HOME'
 export PATH="$HOME/scripts:$PATH"
 

@@ -8,3 +8,9 @@ Few dot files for tmux, wezterm, and lazyvim config. Scripts inspired by scripts
 3. [lazyvim install](https://www.lazyvim.org/installation)
 
 [Guide for using this repo as a bare repo](https://www.atlassian.com/git/tutorials/dotfiles)
+Saving old configs as a backup
+```
+mkdir -p .config-backup && \
+config checkout 2>&1 | egrep "\s+\." | awk '{print $1}' | \
+xargs -I{} sh -c "mkdir -p .config-backup/\$(dirname "{}") && mv "{}" .config-backup/{}"
+```

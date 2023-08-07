@@ -7,7 +7,7 @@ export SSH_AUTH_SOCK=~/Library/Group\ Containers/2BUA8C4S2C.com.1password/t/agen
 source $(brew --prefix nvm)/nvm.sh
 source ~/.bash_profile
 # source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
-source ~/.zsh/fzf-tab-completion/zsh/fzf-zsh-completion.sh
+source ~/.zsh/fzf-tab-completion/fzf-zsh-completion.sh
 bindkey '^I' fzf_completion
 # only for git
 zstyle ':completion:*:*:git:*' fzf-search-display true

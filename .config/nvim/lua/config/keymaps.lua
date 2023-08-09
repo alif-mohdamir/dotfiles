@@ -3,5 +3,15 @@
 -- Add any additional keymaps here
 local set = vim.keymap.set
 
+set("n", "<C-h>", "<cmd> TmuxNavigateLeft<CR>", { desc = "tmux window left" })
+set("n", "<C-l>", "<cmd> TmuxNavigateRight<CR>", { desc = "tmux window right" })
+set("n", "<C-j>", "<cmd> TmuxNavigateDown<CR>", { desc = "tmux window down" })
+set("n", "<C-k>", "<cmd> TmuxNavigateUp<CR>", { desc = "tmux window up" })
+
+set("n", "<leader>wh", "<C-w>h", { desc = "vim window left" })
+set("n", "<leader>wl", "<C-w>l", { desc = "vim window right" })
+set("n", "<leader>wj", "<C-w>j", { desc = "vim window down" })
+set("n", "<leader>wk", "<C-w>k", { desc = "vim window up" })
+
 set("n", "<C-u>", "<C-u>zz", { desc = "Go up half a page and center cursor" })
 set("n", "<C-d>", "<C-d>zz", { desc = "Go up half a page and center cursor" })

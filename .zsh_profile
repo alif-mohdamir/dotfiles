@@ -36,3 +36,6 @@ export PATH="$HOME/scripts:$PATH"
 PATH="$PATH:/Applications/WezTerm.app/Contents/MacOS"
 export PATH
 
+
+export PATH="$PATH:/opt/yarn-[version]/bin"
+. "$HOME/.cargo/env"

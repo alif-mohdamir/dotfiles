@@ -30,7 +30,7 @@ export CPPFLAGS="-I/opt/homebrew/opt/mysql-client/include"
 
 
 # Enables using dotfiles as a bare repo to source dot files and configs
-alias config='/usr/bin/git --git-dir=$HOME/dotfiles/ --work-tree=$HOME'
+alias config='/usr/bin/git --git-dir=$HOME/.cfg/ --work-tree=$HOME'
 export PATH="$HOME/scripts:$PATH"
 
 PATH="$PATH:/Applications/WezTerm.app/Contents/MacOS"

@@ -15,3 +15,7 @@ set("n", "<leader>wk", "<C-w>k", { desc = "vim window up" })
 
 set("n", "<C-u>", "<C-u>zz", { desc = "Go up half a page and center cursor" })
 set("n", "<C-d>", "<C-d>zz", { desc = "Go up half a page and center cursor" })
+
+set("n", "[c", function()
+  require("treesitter-context").go_to_context()
+end, { desc = "Go to parent context" })

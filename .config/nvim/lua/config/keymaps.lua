@@ -19,7 +19,7 @@ set("n", "<C-d>", "<C-d>zz", { desc = "Go up half a page and center cursor" })
 set(
   "v",
   "<leader>r",
-  [[y:%s/\<<C-r><C-w>\>/<C-r><C-w>/g<Left><Left><Left>]],
+  [[y:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]],
   { desc = "Replace selected text in file" }
 )
 

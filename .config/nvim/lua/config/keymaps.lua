@@ -16,12 +16,7 @@ set("n", "<leader>wk", "<C-w>k", { desc = "vim window up" })
 set("n", "<C-u>", "<C-u>zz", { desc = "Go up half a page and center cursor" })
 set("n", "<C-d>", "<C-d>zz", { desc = "Go up half a page and center cursor" })
 
-set(
-  "v",
-  "<leader>r",
-  [[y:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]],
-  { desc = "Replace selected text in file" }
-)
+set("v", "<leader>r", [[y:%s/\<<C-r><C-w>\>/<C-r><C-w>/g<Left><Left>]], { desc = "Replace selected text in file" })
 
 set("n", "[c", function()
   require("treesitter-context").go_to_context()

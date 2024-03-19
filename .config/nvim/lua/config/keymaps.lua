@@ -16,6 +16,10 @@ set("n", "<leader>wk", "<C-w>k", { desc = "vim window up" })
 set("n", "<C-u>", "<C-u>zz", { desc = "Go up half a page and center cursor" })
 set("n", "<C-d>", "<C-d>zz", { desc = "Go up half a page and center cursor" })
 
+set("v", "<leader>ce", ":CodyExplain<CR>", { desc = "Explain selected code Cody" })
+set("v", "<leader>cA", ":CodyAsk", { desc = "Ask Cody about selected code" })
+set("n", "<leader>ct", ":CodyToggle<CR>", { desc = "Toggle Cody chat window" })
+
 set("v", "<leader>r", [[y:%s/\<<C-r>"\>\C/<C-r>"/g<Left><Left>]], { desc = "Replace selected text in file" })
 
 set("n", "[c", function()

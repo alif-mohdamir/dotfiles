@@ -1,11 +1,11 @@
 #!/bin/bash
 #
 if [[ -z $STOW_FOLDERS ]]; then
-	STOW_FOLDERS="bin,nvim,tmux,zsh"
+	STOW_FOLDERS="bin,nvim,tmux,zsh,alacritty,starship"
 fi
 
 if [[ -z $DOTFILES ]]; then
 	DOTFILES=$HOME/projects/dotfiles
 fi
 
-STOW_FOLDERS=$STOW_FOLDERS DOTFILES=$DOTFILES $DOTFILES/install
+STOW_FOLDERS=$STOW_FOLDERS DOTFILES=$DOTFILES $DOTFILES/stow-dotfiles.sh

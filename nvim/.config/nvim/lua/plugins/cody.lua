@@ -19,5 +19,14 @@ return {
     "sourcegraph/sg.nvim",
     dependencies = { "nvim-lua/plenary.nvim" },
     config = true,
+    -- keys = {
+    --   {
+    --     "<leader>cT",
+    --     function()
+    --       require("sg.cody.commands").toggle({ model = "openai/gpt-4-1106-preview" })
+    --     end,
+    --     desc = "Custom toggle for Cody",
+    --   },
+    -- },
   },
 }

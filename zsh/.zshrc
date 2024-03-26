@@ -70,7 +70,7 @@ ZSH_THEME=""
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git gitfast brew zsh-autosuggestions tmux)
+plugins=(git gitfast brew zsh-autosuggestions tmux kubectl)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -102,3 +102,6 @@ export EDITOR='nvim'
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 eval "$(starship init zsh)"
+
+# bun completions
+[ -s "/Users/alifmohd-amir/.bun/_bun" ] && source "/Users/alifmohd-amir/.bun/_bun"

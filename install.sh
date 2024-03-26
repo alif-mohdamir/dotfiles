@@ -5,7 +5,7 @@ if [[ -z $STOW_FOLDERS ]]; then
 fi
 
 if [[ -z $DOTFILES ]]; then
-	DOTFILES=$HOME/projects/dotfiles
+	DOTFILES=~/projects/dotfiles
 fi
 
 STOW_FOLDERS=$STOW_FOLDERS DOTFILES=$DOTFILES $DOTFILES/stow-dotfiles.sh

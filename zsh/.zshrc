@@ -76,7 +76,7 @@ source $ZSH/oh-my-zsh.sh
 
 # User configuration
 source ~/.zsh_profile
-
+source ~/.zsh_profile_local
 # export MANPATH="/usr/local/man:$MANPATH"
 
 # You may need to manually set your language environment

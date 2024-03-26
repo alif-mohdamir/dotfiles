@@ -1,24 +1,44 @@
-
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+export SSH_AUTH_SOCK=~/Library/Group\ Containers/2BUA8C4S2C.com.1password/t/agent.sock
 export PATH=/opt/homebrew/bin:$PATH
 export PATH=/opt/homebrew/Cellar/neovim:$PATH
-export GOPATH="$HOME/go"
-export PATH=$PATH:$GOPATH/bin
-export NVM_DIR=~/.nvm
-export SSH_AUTH_SOCK=~/Library/Group\ Containers/2BUA8C4S2C.com.1password/t/agent.sock
-source $(brew --prefix nvm)/nvm.sh
-source ~/.bash_profile
-# source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
-source ~/.zsh/fzf-tab-completion/fzf-zsh-completion.sh
+# export PATH="$HOME/.local/bin:$PATH"
+
+#kubectl
+export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+
+PATH="$PATH:/Applications/WezTerm.app/Contents/MacOS"
+export PATH
+
+export PIPENV_VENV_IN_PROJECT=1
+export NVM_DIR="$HOME/.nvm"
+  [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"  # This loads nvm
+  [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"  # This loads nvm bash_completion
+source ~/.zsh/fzf-tab-completion/zsh/fzf-zsh-completion.sh
 bindkey '^I' fzf_completion
+
 # only for git
 zstyle ':completion:*:*:git:*' fzf-search-display true
 # or for everything
 zstyle ':completion:*' fzf-search-display true
 
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-
 # starts tmux session in chosen directory if it doesn't exist
 bindkey -s ^f "tmux-sessionizer\n"
+
+
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init --path)"
+eval "$(pyenv init -)"
+alias brew='env PATH="${PATH//$(pyenv root)\/shims:/}" brew'
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/Users/alifmohd-amir/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/alifmohd-amir/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/Users/alifmohd-amir/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/alifmohd-amir/google-cloud-sdk/completion.zsh.inc'; fi
+
+export PATH="/opt/homebrew/opt/gnu-getopt/bin:$PATH"
 
 # Git autocompletion
 autoload -Uz compinit && compinit
@@ -36,6 +56,5 @@ export PATH="$HOME/scripts:$PATH"
 PATH="$PATH:/Applications/WezTerm.app/Contents/MacOS"
 export PATH
 
+export NPM_TOKEN=$(op read op://Private/NPM_TOKEN/credential)
 
-export PATH="$PATH:/opt/yarn-[version]/bin"
-. "$HOME/.cargo/env"

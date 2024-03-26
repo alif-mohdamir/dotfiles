@@ -1,23 +1,34 @@
 #!/usr/bin/env bash
 
-if [[ $# -eq 1 ]]; then
-	selected=$1
-else
-	selected=$(find ~/projects -mindepth 1 -maxdepth 1 -type d | fzf)
-fi
-
-if [[ -z $selected ]]; then
-	exit 0
-fi
-
+branch_name=$(basename $1)
 session_name=$(tmux display-message -p "#S")
-selected_name=$(basename "$selected" | tr "./" "__")
-tmux_running=$(pgrep tmux)
-
-target="$session_name:$selected_name"
+clean_name=$(echo $branch_name | tr "./" "__")
+target="$session_name:$clean_name"
 
 if ! tmux has-session -t $target 2>/dev/null; then
-	tmux neww -n $selected_name -c $selected
+	tmux neww -dn $clean_name
 fi
 
-tmux select-window -t $target
+shift
+tmux send-keys -t $target "$*"
+# if [[ $# -eq 1 ]]; then
+# 	selected=$1
+# else
+# 	selected=$(find ~/projects -mindepth 1 -maxdepth 1 -type d | fzf)
+# fi
+#
+# if [[ -z $selected ]]; then
+# 	exit 0
+# fi
+#
+# session_name=$(tmux display-message -p "#S")
+# selected_name=$(basename "$selected" | tr "./" "__")
+# tmux_running=$(pgrep tmux)
+#
+# target="$session_name:$selected_name"
+#
+# if ! tmux has-session -t $target 2>/dev/null; then
+# 	tmux neww -n $selected_name -c $selected
+# fi
+#
+# tmux select-window -t $target

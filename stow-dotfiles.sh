@@ -9,6 +9,7 @@ for folder in $(echo $STOW_FOLDERS | sed "s/,/ /g"); do
 	# stow creates the symlink to the parent directory of where the command is run if no --target is specified
 	stow -D --target ~ $folder
 	stow --target ~ $folder
+	# Uncomment the line below to stow and import whatever differences are present in the target directory
 	# stow --target ~ $folder --adopt
 done
 

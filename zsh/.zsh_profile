@@ -56,3 +56,5 @@ export PATH="$HOME/scripts:$PATH"
 PATH="$PATH:/Applications/WezTerm.app/Contents/MacOS"
 export PATH
 
+# Add nvim-kickstart as runnable alias for neovim
+alias nvim-kickstart='NVIM_APPNAME="nvim-kickstart" nvim'

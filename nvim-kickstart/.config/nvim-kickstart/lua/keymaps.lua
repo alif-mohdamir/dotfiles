@@ -1,6 +1,5 @@
 -- [[ Basic Keymaps ]]
---  See `:help vim.keymap.set()`
-
+--  See `:help vim.keymap.set()`ap kickstart
 local set = vim.keymap.set
 -- Set highlight on search, but clear on pressing <Esc> in normal mode
 vim.opt.hlsearch = true
@@ -29,6 +28,10 @@ vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right win
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
+-- Might be able to use <C-^>?
+-- <C-^> opens an empty file vs throwing an error appears to be the main behavior difference
+set('n', '<leader>bb', '<cmd>e #<CR>', { desc = 'Switch to last open buffer' })
+
 set('n', '<C-h>', '<cmd> TmuxNavigateLeft<CR>', { desc = 'tmux window left' })
 set('n', '<C-l>', '<cmd> TmuxNavigateRight<CR>', { desc = 'tmux window right' })
 set('n', '<C-j>', '<cmd> TmuxNavigateDown<CR>', { desc = 'tmux window down' })
@@ -39,8 +42,8 @@ set('n', '<leader>wh', ':bprevious<CR>', { desc = 'Previous buffer' })
 
 set('n', '<C-u>', '<C-u>zz', { desc = 'Go up half a page and center cursor' })
 set('n', '<C-d>', '<C-d>zz', { desc = 'Go up half a page and center cursor' })
-set('v', '<leader>ce', ':CodyExplain<CR>', { desc = 'Explain selected code Cody' })
 
+set('v', '<leader>ce', ':CodyExplain<CR>', { desc = 'Explain selected code Cody' })
 set('v', '<leader>cA', ':CodyAsk', { desc = 'Ask Cody about selected code' })
 set('n', '<leader>ct', ':CodyToggle<CR>', { desc = 'Toggle Cody chat window' })
 

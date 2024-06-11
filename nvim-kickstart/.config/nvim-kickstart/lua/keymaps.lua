@@ -28,10 +28,6 @@ vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right win
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
--- Might be able to use <C-^>?
--- <C-^> opens an empty file vs throwing an error appears to be the main behavior difference
-set('n', '<leader>bb', '<cmd>e #<CR>', { desc = 'Switch to last open buffer' })
-
 set('n', '<C-h>', '<cmd> TmuxNavigateLeft<CR>', { desc = 'tmux window left' })
 set('n', '<C-l>', '<cmd> TmuxNavigateRight<CR>', { desc = 'tmux window right' })
 set('n', '<C-j>', '<cmd> TmuxNavigateDown<CR>', { desc = 'tmux window down' })
@@ -49,6 +45,14 @@ set('n', '<leader>ct', ':CodyToggle<CR>', { desc = 'Toggle Cody chat window' })
 
 set('v', '<leader>r', [[y:%s/\<<C-r>"\>/<C-r>"/g<Left><Left>]], { desc = 'Replace selected text in file' })
 set('v', '<leader>R', [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]], { desc = 'Replace selected text in selection' })
+
+-- Might be able to use <C-^>?
+-- <C-^> opens an empty file vs throwing an error appears to be the main behavior difference
+set('n', '<leader>bb', '<cmd>e #<CR>', { desc = 'Switch to last open [b]uffer' })
+set('n', '<leader>bp', '<cmd>bprevious<CR>', { desc = 'Switch to [p]revious buffer' })
+set('n', '<leader>bn', '<cmd>bnext<CR>', { desc = 'Switch to [n]ext buffer' })
+set('n', '<leader>bd', '<cmd>bdelete<CR>', { desc = '[D]elete current buffer' })
+set('n', '<leader>E', '<cmd>Explore<CR>', { desc = 'Open Netrw [E]xplorer' })
 
 set('n', '[p', function()
   require('treesitter-context').go_to_context()

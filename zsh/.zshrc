@@ -103,5 +103,3 @@ export EDITOR='nvim'
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 eval "$(starship init zsh)"
 
-# bun completions
-[ -s "/Users/alifmohd-amir/.bun/_bun" ] && source "/Users/alifmohd-amir/.bun/_bun"

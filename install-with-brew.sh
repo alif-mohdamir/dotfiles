@@ -13,6 +13,8 @@ brew install gh
 brew install lazygit
 brew install neovim
 brew install ripgrep
+brew install --cask font-jetbrains-mono-nerd-font
+brew install stow
 
 # Install oh-my-zsh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"

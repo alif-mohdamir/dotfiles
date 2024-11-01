@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 if [[ -z $STOW_FOLDERS ]]; then
-	STOW_FOLDERS="bin,nvim,tmux,zsh,alacritty,starship,nvim-kickstart"
+	STOW_FOLDERS="bin,nvim,tmux,zsh,alacritty,starship"
 fi
 
 if [[ -z $DOTFILES ]]; then

@@ -39,10 +39,6 @@ set('n', '<leader>wh', ':bprevious<CR>', { desc = 'Previous buffer' })
 set('n', '<C-u>', '<C-u>zz', { desc = 'Go up half a page and center cursor' })
 set('n', '<C-d>', '<C-d>zz', { desc = 'Go up half a page and center cursor' })
 
-set('v', '<leader>ce', ':CodyExplain<CR>', { desc = 'Explain selected code Cody' })
-set('v', '<leader>cA', ':CodyAsk', { desc = 'Ask Cody about selected code' })
-set('n', '<leader>ct', ':CodyToggle<CR>', { desc = 'Toggle Cody chat window' })
-
 set('v', '<leader>r', [[y:%s/\<<C-r>"\>/<C-r>"/g<Left><Left>]], { desc = 'Replace selected text in file' })
 set('v', '<leader>R', [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]], { desc = 'Replace selected text in selection' })
 

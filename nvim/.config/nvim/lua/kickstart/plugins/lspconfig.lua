@@ -9,11 +9,11 @@ return {
 
       -- Useful status updates for LSP.
       -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-      { 'j-hui/fidget.nvim',       opts = {} },
+      { 'j-hui/fidget.nvim', opts = {} },
 
       -- `neodev` configures Lua LSP for your Neovim config, runtime and plugins
       -- used for completion, annotations and signatures of Neovim apis
-      { 'folke/neodev.nvim',       opts = {} },
+      { 'folke/neodev.nvim', opts = {} },
     },
     config = function()
       -- Brief aside: **What is LSP?**
@@ -158,6 +158,35 @@ return {
         -- now ts_ls?
         ts_ls = {},
         --
+
+        ['rust-analyzer'] = {
+          rust = { analyzerTargetDir = true },
+          inlayHints = {
+            bindingModeHints = { enable = true },
+            closureReturnTypeHints = { enable = 'always' },
+            discriminantHints = { enable = 'always' },
+            parameterHints = { enable = true },
+            diagnostics = {
+              disabled = { 'inactive-code', 'unresolved-proc-macro' },
+            },
+            files = {
+              excludeDirs = {
+                '.direnv',
+                'target',
+                'js',
+                'node_modules',
+                'assets',
+                'ci',
+                'data',
+                'docs',
+                'store-metadata',
+                '.gitlab',
+                '.vscode',
+                '.git',
+              },
+            },
+          },
+        },
 
         lua_ls = {
           -- cmd = {...},

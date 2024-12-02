@@ -3,7 +3,9 @@
 if [[ $# -eq 1 ]]; then
 	selected=$1
 else
-	selected=$(find ~/projects ~/projects/workspace/blameless -mindepth 1 -maxdepth 1 -type d | fzf)
+	# LOCAL_WORKSPACES should be space separated paths from home
+	# ~/example/directory ~/other_example_directory
+	selected=$(eval find $LOCAL_WORKSPACES -mindepth 1 -maxdepth 1 -type d | fzf)
 fi
 
 if [[ -z $selected ]]; then

@@ -1,5 +1,6 @@
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
+# zmodload zsh/zprof
 
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
@@ -70,7 +71,7 @@ ZSH_THEME=""
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git gitfast brew zsh-autosuggestions tmux kubectl)
+plugins=(git gitfast zsh-autosuggestions tmux direnv)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -103,3 +104,6 @@ export EDITOR='nvim'
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 eval "$(starship init zsh)"
 
+# source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
+# zprof

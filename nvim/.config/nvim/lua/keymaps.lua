@@ -50,8 +50,8 @@ set('n', '<leader>bn', '<cmd>bnext<CR>', { desc = 'Switch to [n]ext buffer' })
 set('n', '<leader>bd', '<cmd>bdelete<CR>', { desc = '[D]elete current buffer' })
 set('n', '<leader>E', '<cmd>Explore<CR>', { desc = 'Open Netrw [E]xplorer' })
 
-set('v', 'p', 'P', { desc = 'Paste without yanking' })
-set('n', '<C-f>', '<cmd>silent !tmux neww tmux-sessionizer<CR>')
+set('x', '<leader>p', [["_dP]], { desc = 'Paste without yanking in visual mode' })
+set('n', '<C-f>', '<cmd>silent !tmux neww tmux-sessionizer<CR>', { desc = 'Run tmux-sessionizer in new tmux session' })
 
 set('n', '[p', function()
   require('treesitter-context').go_to_context()

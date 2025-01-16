@@ -26,9 +26,15 @@ return {
       },
       { 'nvim-telescope/telescope-ui-select.nvim' },
       {
-        'nvim-telescope/telescope-frecency.nvim',
+        'mollerhoj/telescope-recent-files.nvim',
         config = function()
-          require('telescope').load_extension 'frecency'
+          require('telescope').load_extension 'recent-files'
+        end,
+      },
+      {
+        'mrloop/telescope-git-branch.nvim',
+        config = function()
+          require('telescope').load_extension 'git_branch'
         end,
       },
       -- Useful for getting pretty icons, but requires a Nerd Font.
@@ -223,7 +229,7 @@ return {
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
       vim.keymap.set('n', '<leader>sG', builtin.live_grep, { desc = '[S]earch by [G]rep' })
-      vim.keymap.set('n', '<leader>sb', function()
+      vim.keymap.set('n', '<leader>sB', function()
         builtin.find_files { cwd = utils.buffer_dir() }
       end, { desc = '[S]earch Files in [B]uffer Directory' })
       vim.keymap.set(
@@ -239,8 +245,9 @@ return {
       -- end, { desc = '[S]earch [Q]uickfix List With Grep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
-      vim.keymap.set('n', '<leader>s.', '<cmd>Telescope frecency workspace=CWD<CR>', { desc = '[S]earch Recent Files ("." for repeat)' })
+      vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+      vim.keymap.set('n', '<leader>sb', '<cmd>Telescope git_branch<CR>', { desc = '[S]earch Git [B]ranch' })
 
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()

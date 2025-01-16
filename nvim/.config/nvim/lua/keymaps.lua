@@ -40,7 +40,7 @@ set('n', '<C-u>', '<C-u>zz', { desc = 'Go up half a page and center cursor' })
 set('n', '<C-d>', '<C-d>zz', { desc = 'Go up half a page and center cursor' })
 
 set('v', '<leader>r', [[y:%s/\<<C-r>"\>/<C-r>"/g<Left><Left>]], { desc = 'Replace selected text in file' })
-set('v', '<leader>R', [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]], { desc = 'Replace selected text in selection' })
+set('v', '<leader>R', ':%s/<<C-r><C-w>>/<C-r><C-w>/gI<Left><Left><Left>', { desc = 'Replace selected text in selection' })
 
 -- Might be able to use <C-^>?
 -- <C-^> opens an empty file vs throwing an error appears to be the main behavior difference
@@ -56,6 +56,8 @@ set('n', '<C-f>', '<cmd>silent !tmux neww tmux-sessionizer<CR>', { desc = 'Run t
 set('n', '[p', function()
   require('treesitter-context').go_to_context()
 end, { desc = 'Go to parent context' })
+
+set('n', '<leader>yf', ':let @+ = expand("%")<CR>', { desc = 'Copy relative path to clipboard' })
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`

@@ -20,7 +20,7 @@ return {
       -- 'enter' for mappings similar to 'super-tab' but with 'enter' to accept
       -- see the "default configuration" section below for full documentation on how to define
       -- your own keymap.
-      keymap = { preset = 'enter' },
+      keymap = { preset = 'enter', ['<C-y>'] = { 'select_and_accept' } },
 
       completion = {
         -- Show documentation when selecting a completion item

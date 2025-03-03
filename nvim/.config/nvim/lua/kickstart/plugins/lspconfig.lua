@@ -45,7 +45,6 @@ return {
       --  This function gets run when an LSP attaches to a particular buffer.
       --    That is to say, every time a new file is opened that is associated with
       --    an lsp (for example, opening `main.rs` is associated with `rust_analyzer`) this
-      --    function will be executed to configure the current buffer
       vim.api.nvim_create_autocmd('LspAttach', {
         group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
         callback = function(event)
@@ -157,7 +156,6 @@ return {
         },
         pyright = {},
         ['terraform-ls'] = {},
-        -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -167,35 +165,6 @@ return {
         -- now ts_ls?
         ts_ls = {},
         --
-
-        ['rust-analyzer'] = {
-          rust = { analyzerTargetDir = true },
-          inlayHints = {
-            bindingModeHints = { enable = true },
-            closureReturnTypeHints = { enable = 'always' },
-            discriminantHints = { enable = 'always' },
-            parameterHints = { enable = true },
-            diagnostics = {
-              disabled = { 'inactive-code', 'unresolved-proc-macro' },
-            },
-            files = {
-              excludeDirs = {
-                '.direnv',
-                'target',
-                'js',
-                'node_modules',
-                'assets',
-                'ci',
-                'data',
-                'docs',
-                'store-metadata',
-                '.gitlab',
-                '.vscode',
-                '.git',
-              },
-            },
-          },
-        },
 
         lua_ls = {
           -- cmd = {...},

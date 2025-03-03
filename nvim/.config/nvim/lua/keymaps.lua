@@ -23,15 +23,15 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 --  Use CTRL+<hjkl> to switch between windows
 --
 --  See `:help wincmd` for a list of all window commands
-vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
-vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
-vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
-vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
-
-set('n', '<C-h>', '<cmd> TmuxNavigateLeft<CR>', { desc = 'tmux window left' })
-set('n', '<C-l>', '<cmd> TmuxNavigateRight<CR>', { desc = 'tmux window right' })
-set('n', '<C-j>', '<cmd> TmuxNavigateDown<CR>', { desc = 'tmux window down' })
-set('n', '<C-k>', '<cmd> TmuxNavigateUp<CR>', { desc = 'tmux window up' })
+-- vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
+-- vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
+-- vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
+-- vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+--
+-- set('n', '<C-h>', '<cmd> TmuxNavigateLeft<CR>', { desc = 'tmux window left' })
+-- set('n', '<C-l>', '<cmd> TmuxNavigateRight<CR>', { desc = 'tmux window right' })
+-- set('n', '<C-j>', '<cmd> TmuxNavigateDown<CR>', { desc = 'tmux window down' })
+-- set('n', '<C-k>', '<cmd> TmuxNavigateUp<CR>', { desc = 'tmux window up' })
 
 -- Similar to what I use for tmux with prefix h
 set('n', '<leader>wh', ':bprevious<CR>', { desc = 'Previous buffer' })

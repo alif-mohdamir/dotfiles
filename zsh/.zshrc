@@ -5,6 +5,10 @@
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
+# User configuration
+source ~/.zsh_profile
+source ~/.zsh_profile_local
+
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
@@ -75,9 +79,10 @@ plugins=(git gitfast zsh-autosuggestions tmux direnv kubectl)
 
 source $ZSH/oh-my-zsh.sh
 
-# User configuration
-source ~/.zsh_profile
-source ~/.zsh_profile_local
+# Set up fzf key bindings and fuzzy completion
+# This needs to occur after oh-my-zsh is sourced in order for key maps to be setup correctly
+source <(fzf --zsh)
+
 # export MANPATH="/usr/local/man:$MANPATH"
 
 # You may need to manually set your language environment

@@ -13,6 +13,8 @@ elif [ -f ~/.zsh/fzf-tab-completion/fzf-zsh-completion.sh ]; then
 fi
 bindkey '^I' fzf_completion
 
+export FZF_DEFAULT_OPTS='--tmux'
+
 # only for git
 zstyle ':completion:*:*:git:*' fzf-search-display true
 # or for everything

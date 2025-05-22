@@ -14,8 +14,8 @@ return {
     set('n', '<leader>gc', ':G commit <CR>', { desc = 'Git commit staged files' })
     set('n', '<leader>gcA', ':G commit -a<CR>', { desc = '[G]it [c]ommit and stage [A]LL files' })
 
-    set('n', '<leader>gpf', ':G push --force<CR>', { desc = '[G]it [p]ush [f]orce' })
-    set('n', '<leader>gp', ':G push <CR>', { desc = '[G]it [p]ush' })
+    set('n', '<leader>gPf', ':G push --force<CR>', { desc = '[G]it [p]ush [f]orce' })
+    set('n', '<leader>gP', ':G push <CR>', { desc = '[G]it [p]ush' })
     -- vim.keymaps.set('n', '<leader>gs', vim.cmd.Git)
     --
     --     local autocmd = vim.api.nvim_create_autocmd

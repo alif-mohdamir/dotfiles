@@ -7,10 +7,15 @@ return {
     set('n', '<leader>gl', ':Git difftool --name-status --merge-base origin/main <CR>', { desc = 'Git diff list' })
     set('n', '<leader>gd', ':Gvdiff origin/main<CR>', { desc = 'Git diff vertical split' })
     set('n', '<leader>gprom', ':G pull --rebase origin main', { desc = 'Git pull --rebase origin main' })
+
     set('n', '<leader>gaA', ':G add .<CR>', { desc = '[G]it [a]dd [A]LL modified files' })
     set('n', '<leader>ga', ':G add %<CR>', { desc = '[G]it add current modified file' })
+
     set('n', '<leader>gc', ':G commit <CR>', { desc = 'Git commit staged files' })
     set('n', '<leader>gcA', ':G commit -a<CR>', { desc = '[G]it [c]ommit and stage [A]LL files' })
+
+    set('n', '<leader>gpf', ':G push --force<CR>', { desc = '[G]it [p]ush [f]orce' })
+    set('n', '<leader>gp', ':G push <CR>', { desc = '[G]it [p]ush' })
     -- vim.keymaps.set('n', '<leader>gs', vim.cmd.Git)
     --
     --     local autocmd = vim.api.nvim_create_autocmd

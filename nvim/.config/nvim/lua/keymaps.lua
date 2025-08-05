@@ -54,7 +54,7 @@ set('x', '<leader>p', [["_dP]], { desc = 'Paste without yanking in visual mode' 
 set('n', '<C-f>', '<cmd>silent !tmux neww tmux-sessionizer<CR>', { desc = 'Run tmux-sessionizer in new tmux session' })
 
 set('n', '[p', function()
-  require('treesitter-context').go_to_context()
+  require('treesitter-context').go_to_context(vim.v.count1)
 end, { desc = 'Go to parent context' })
 
 set('n', '<leader>yf', ':let @+ = expand("%")<CR>', { desc = 'Copy relative path to clipboard' })

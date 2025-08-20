@@ -60,6 +60,13 @@ return {
         map('n', '<leader>hD', function()
           gitsigns.diffthis '@'
         end, { desc = 'git [D]iff against last commit' })
+
+        map('n', '<leader>hh', function()
+          local file = vim.fn.expand '%'
+          local line = vim.fn.line '.'
+          local hash = vim.fn.system(string.format("git blame -L %d,+1 --porcelain -- %s | head -n1 | cut -d' ' -f1", line, file))
+          vim.fn.setreg('+', vim.fn.trim(hash))
+        end, { desc = 'get git commit [h]ash' })
         -- Toggles
         map('n', '<leader>tb', gitsigns.toggle_current_line_blame, { desc = '[T]oggle git show [b]lame line' })
         map('n', '<leader>tD', gitsigns.toggle_deleted, { desc = '[T]oggle git show [D]eleted' })

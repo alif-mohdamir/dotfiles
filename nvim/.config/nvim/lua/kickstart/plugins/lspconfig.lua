@@ -152,6 +152,7 @@ return {
             gopls = {
               buildFlags = { '-tags=debug' },
             },
+            staticcheck = true,
           },
         },
         pyright = {},

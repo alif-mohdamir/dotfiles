@@ -42,3 +42,9 @@ color = '#ff9e64'
 [[colors.indexed_colors]]
 index = 17
 color = '#db4b4b'
+
+# Claude code binding
+[[keyboard.bindings]]
+key = "Return"
+mods = "Shift"
+chars = "\u001B\r"

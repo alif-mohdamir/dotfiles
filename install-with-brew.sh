@@ -16,13 +16,12 @@ brew install ripgrep
 brew install --cask font-jetbrains-mono-nerd-font
 brew install stow
 
-# Additional packages needed for fzf-tab-completion
-brew install gawk grep gnu-sed coreutils
-
 # Install oh-my-zsh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 # Install zsh-autosuggestions
 git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+# Install fzf-tab (native zsh completions in fzf UI)
+git clone https://github.com/Aloxaf/fzf-tab ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab
 
 # Set up fzf key bindings and fuzzy completion
 source <(fzf --zsh)

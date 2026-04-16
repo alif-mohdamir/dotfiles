@@ -1,3 +1,5 @@
+command_timeout = 3000 #3s
+
 [aws]
 symbol = "  "
 disabled = true
@@ -141,3 +143,19 @@ symbol = " "
 
 [scala]
 symbol = " "
+
+[custom.jj_log]
+description = "Show info from jj about current change set"
+
+# Only show inside a jj repo
+detect_folders = [".jj"]
+
+# Do not snapshot working copy (keeps prompt fast)
+command = '''
+jj show --ignore-working-copy -r @- --no-pager --no-patch \
+  -T "separate(' ', format_short_change_id_with_change_offset(self), self.bookmarks())"
+'''
+
+format = " $output "
+
+shell = ["bash", "--noprofile", "--norc"]

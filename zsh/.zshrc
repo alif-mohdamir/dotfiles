@@ -75,13 +75,17 @@ ZSH_THEME=""
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git gitfast zsh-autosuggestions tmux direnv kubectl)
+plugins=(git gitfast zsh-autosuggestions tmux direnv kubectl jj)
 
 source $ZSH/oh-my-zsh.sh
 
 # Set up fzf key bindings and fuzzy completion
 # This needs to occur after oh-my-zsh is sourced in order for key maps to be setup correctly
 source <(fzf --zsh)
+
+# fzf-tab: replace fzf's default completion with native zsh completions in fzf UI
+# Sourced after fzf --zsh so it overrides fzf's Tab binding
+source ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh
 
 # export MANPATH="/usr/local/man:$MANPATH"
 
@@ -110,6 +114,6 @@ export VISUAL='nvim'
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 eval "$(starship init zsh)"
 
-# source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ] && source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
 # zprof

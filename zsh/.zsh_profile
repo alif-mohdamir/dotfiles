@@ -1,30 +1,23 @@
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 export SSH_AUTH_SOCK=~/Library/Group\ Containers/2BUA8C4S2C.com.1password/t/agent.sock
-export PATH=/opt/homebrew/bin:$PATH
 export PATH=/opt/homebrew/Cellar/neovim:$PATH
 
 export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
-
-if [ -f ~/.zsh/fzf-tab-completion/zsh/fzf-zsh-completion.sh ]; then
-  source ~/.zsh/fzf-tab-completion/zsh/fzf-zsh-completion.sh
-elif [ -f ~/.zsh/fzf-tab-completion/fzf-zsh-completion.sh ]; then
-  source ~/.zsh/fzf-tab-completion/fzf-zsh-completion.sh
-fi
-bindkey '^I' fzf_completion
-
 export FZF_DEFAULT_OPTS='--tmux'
 
-# only for git
-zstyle ':completion:*:*:git:*' fzf-search-display true
-# or for everything
+# Show fzf search display for all completions
 zstyle ':completion:*' fzf-search-display true
+# Show fzf-tab completions in a tmux popup
+zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 
 # starts tmux session in chosen directory if it doesn't exist
 bindkey -s ^f "tmux-sessionizer\n"
 
 export GOPATH="$HOME/go"
 export PATH="$GOPATH/bin:$PATH"
+# After this path so homebrew scripts take precedence over go installed scripts
+export PATH=/opt/homebrew/bin:$PATH
 
 export PATH="/opt/homebrew/opt/gnu-getopt/bin:$PATH"
 

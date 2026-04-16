@@ -36,6 +36,12 @@ return {
           require('telescope').load_extension 'git_branch'
         end,
       },
+      {
+        'zschreur/telescope-jj.nvim',
+        config = function()
+          require('telescope').load_extension 'jj'
+        end,
+      },
       -- Useful for getting pretty icons, but requires a Nerd Font.
       { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
     },
@@ -220,6 +226,7 @@ return {
 
       -- See `:help telescope.builtin`
       local builtin = require 'telescope.builtin'
+      local telescope = require 'telescope'
 
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
@@ -246,8 +253,34 @@ return {
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
-      vim.keymap.set('n', '<leader>sb', '<cmd>Telescope git_branch<CR>', { desc = '[S]earch Git [B]ranch' })
-      vim.keymap.set('n', '<leader>ss', builtin.git_status, { desc = '[S]earch Git [S]tatus' })
+      -- vim.keymap.set('n', '<leader>sb', '<cmd>Telescope git_branch<CR>', { desc = '[S]earch Git [B]ranch' })
+      -- vim.keymap.set('n', '<leader>ss', builtin.git_status, { desc = '[S]earch Git [S]tatus' })
+
+      local vcs_diff = function()
+        local jj_diff, jj_res = pcall(telescope.extensions.jj.diff, { revision = 'main@origin..@' })
+        if jj_diff then
+          return
+        end
+        local git_files_status, git_res = pcall(telescope.extensions.git_branch.files)
+        if not git_files_status then
+          error('Could not launch jj/git files: \n' .. jj_res .. '\n' .. git_res)
+        end
+      end
+
+      local vcs_status = function()
+        local jj_diff, jj_res = pcall(telescope.extensions.jj.diff)
+        if jj_diff then
+          return
+        end
+        local git_files_status, git_res = pcall(builtin.git_status)
+        if not git_files_status then
+          error('Could not launch jj/git status: \n' .. jj_res .. '\n' .. git_res)
+        end
+      end
+
+      vim.keymap.set('n', '<leader>sb', vcs_diff, { desc = '[S]earch Git or JJ [B]ookmark or [B]ranch' })
+      -- vim.keymap.set('n', '<leader>sjb', '<cmd>Telescope jj<CR>', { desc = '[S]earch [J]J [B]ookmark' })
+      vim.keymap.set('n', '<leader>ss', vcs_status, { desc = '[S]earch [J]J [S]tatus' })
 
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()

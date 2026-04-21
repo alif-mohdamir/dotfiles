@@ -117,3 +117,42 @@ eval "$(starship init zsh)"
 [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ] && source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
 # zprof
+
+# Remove isolated PR-review checkouts left by the /review-pr skill (.pr-review-* siblings).
+# Run from inside the target repo. `pr-review-clean dry` previews without deleting.
+pr-review-clean() {
+  emulate -L zsh
+  local DRY=0 root vcs found ws wsroot d
+  case "$1" in dry|list|-n|--dry-run) DRY=1 ;; esac
+  if jj root >/dev/null 2>&1; then
+    root=$(jj root); vcs=jj
+  elif root=$(git rev-parse --show-toplevel 2>/dev/null); then
+    vcs=git
+  else
+    print -ru2 -- "Not inside a jj or git repo — cd into the repo first."; return 1
+  fi
+  found=0
+  if [ "$vcs" = jj ]; then
+    while IFS= read -r ws; do
+      [ -n "$ws" ] || continue
+      [ "$ws" = default ] && continue
+      wsroot=$(jj -R "$root" workspace root --name "$ws" 2>/dev/null) || continue
+      case "${wsroot:t}" in .pr-review-*) ;; *) continue ;; esac
+      (( found += 1 ))
+      if (( DRY )); then print -r -- "would remove (jj): $ws -> $wsroot"; continue; fi
+      jj -R "$root" workspace forget "$ws" 2>/dev/null
+      rm -rf "$wsroot"; print -r -- "removed jj workspace: $ws ($wsroot)"
+    done < <(jj -R "$root" workspace list -T 'name ++ "\n"')
+  else
+    while IFS= read -r d; do
+      [ -n "$d" ] || continue
+      case "${d:t}" in .pr-review-*) ;; *) continue ;; esac
+      (( found += 1 ))
+      if (( DRY )); then print -r -- "would remove (git): $d"; continue; fi
+      git -C "$root" worktree remove --force "$d" 2>/dev/null || rm -rf "$d"
+      print -r -- "removed git worktree: $d"
+    done < <(git -C "$root" worktree list --porcelain | sed -n 's/^worktree //p')
+    (( DRY )) || git -C "$root" worktree prune
+  fi
+  (( found )) || print -r -- "No .pr-review-* checkouts found for $root."
+}

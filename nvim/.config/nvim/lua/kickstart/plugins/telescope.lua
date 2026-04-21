@@ -257,7 +257,7 @@ return {
       -- vim.keymap.set('n', '<leader>ss', builtin.git_status, { desc = '[S]earch Git [S]tatus' })
 
       local vcs_diff = function()
-        local jj_diff, jj_res = pcall(telescope.extensions.jj.diff, { revision = 'main@origin..@' })
+        local jj_diff, jj_res = pcall(telescope.extensions.jj.diff, { from = 'fork_point(trunk() | @-)', to = '@-' })
         if jj_diff then
           return
         end

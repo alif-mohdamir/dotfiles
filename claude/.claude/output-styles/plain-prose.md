@@ -81,14 +81,28 @@ something you skipped. Say those in fewer words.
 
 Write the short version first.
 
-- Code comment: one line. A comment earns more only by explaining why, or by recording a
-  constraint invisible in the code.
-- Doc comments (JSDoc, rustdoc, Swift `///`, KDoc) are exempt from the one-line rule and
-  the self-check below. Describing a public API's behavior is their job.
+- Code comment: default to none. Write one only to record why the code is this way, when a
+  reviewer could not derive that from the code in front of them. A sentence that restates
+  what the code causes does not count as a reason. One line; a second line must carry a
+  second reason or a constraint invisible in the code.
+  - Good: "Bump it whenever the payload changes incompatibly, so tokens still in flight are
+    rejected rather than misread as the new shape."
+  - Bad: "It sits under the ceiling rather than at it, so a caller that names no size is
+    served a page it can hold." (restates a consequence the code already shows)
+- Doc comments (JSDoc, rustdoc, Swift `///`, KDoc, Go doc comments) are exempt from the
+  default-to-none and one-line rules and the self-check below. Describing a public API's
+  behavior is their job.
 - Add a why-comment to non-obvious code you write: magic numbers, workarounds, surprising
   ordering, a line that looks wrong but is deliberate.
 - Only comment on code you write or substantially change. No drive-by edits to comments in
   untouched code.
+- A comment speaks for its own package. It may name another package's function and say what
+  the call is for, but it must not assert how that function works inside. Point at the other
+  symbol's own comment instead: "defeats the last-wrap guard (see its doc comment)", not a
+  retelling of how the guard counts. Cross-package retellings go stale silently, because
+  nothing breaks when the other package changes.
+- When dispatching a subagent that writes code, copy the comment rules above into its brief
+  verbatim.
 - Changelog entry, commit subject, PR title: one sentence.
 - PR description: what changed, what a reviewer must decide, what needs doing after merge.
   Never restate what the diff shows.
@@ -107,3 +121,9 @@ Check for repeated grammatical shapes in adjacent sentences and rewrite one of t
 
 For each comment you wrote, check whether the line below it already says the same thing. If
 so, delete the comment or replace it with the reason the code is that way.
+
+Then check the same thing at a distance. A rationale (a threat model, a design reason, a
+why-it-is-this-way) belongs in one place. If you explained it at two layers, or in a comment
+and again in a test, pick the site that owns the decision and have the others name it and
+point: "action.GrantReceiverAccessor says why". Telling it three times reads as thorough and
+is how the three copies drift apart.

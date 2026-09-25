@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 if [[ -z $STOW_FOLDERS ]]; then
-	STOW_FOLDERS="bin,nvim,tmux,zsh,alacritty,starship"
+	STOW_FOLDERS="bin,nvim,tmux,zsh,alacritty,starship,claude"
 fi
 
 if [[ -z $DOTFILES ]]; then
@@ -9,3 +9,4 @@ if [[ -z $DOTFILES ]]; then
 fi
 
 STOW_FOLDERS=$STOW_FOLDERS DOTFILES=$DOTFILES $DOTFILES/stow-dotfiles.sh
+$DOTFILES/claude-settings/generate.sh

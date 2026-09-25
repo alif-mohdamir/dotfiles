@@ -16,6 +16,8 @@ brew install ripgrep
 brew install --cask font-jetbrains-mono-nerd-font
 brew install stow
 brew install jq
+brew install jj
+brew install git-delta
 
 # Install oh-my-zsh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"

@@ -8,8 +8,8 @@ for folder in $(echo $STOW_FOLDERS | sed "s/,/ /g"); do
 	echo "stow $folder"
 	# stow creates the symlink to the parent directory of where the command is run if no --target is specified
 	flags=""
-	# ~/.claude also holds machine state and claude.ai-synced skills; linking whole dirs would write those into the repo
-	[[ $folder == claude ]] && flags="--no-folding"
+	# ~/.claude and ~/.config/jj also hold machine state (and local-only config); linking whole dirs would write those into the repo
+	[[ $folder == claude || $folder == jj ]] && flags="--no-folding"
 	stow -D --target ~ $folder
 	stow $flags --target ~ $folder
 	# Uncomment the line below to stow and import whatever differences are present in the target directory

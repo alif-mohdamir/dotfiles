@@ -12,6 +12,10 @@ Catch issues the specialists miss:
 - Changes spanning multiple concerns at once (bug + security + test entangled)
 - Architectural smells, coupling/cohesion issues
 - Inconsistencies with the rest of the codebase
+- New tests placed against the repo's test-file layout (for example, transport tests in a
+  file split out for another transport or feature)
+- Departures from a recorded decision in triage that the change description does not
+  explain, severity `med`
 - Anything that falls between the taxonomy buckets
 - Domain blind spots
 
@@ -27,6 +31,9 @@ Comment and naming noise, severity `low`:
   case", "Changed to use the new API".
 - Section-header comments or decorative dividers inside a short function.
 - Em dashes in added comments. The house style bans them, so they mark generated text.
+- A comment telling how a symbol in another package works inside (its struct tags, its
+  handler ordering) rather than naming it and pointing at its doc comment. Read every added
+  comment for this, not only the lines triage cites.
 
 Severity `med` when a comment contradicts the code it describes. That misleads the next
 reader, which is a different problem from a comment that merely repeats.

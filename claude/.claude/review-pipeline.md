@@ -16,6 +16,9 @@ file refers to:
 - **Overrides**: per-context rules (for example, which tree to read from) that win over
   anything here.
 
+A caller may also supply **recorded decisions**: choices settled outside the diff and its
+description, such as comments on a linked ticket. Each one is a check the diff must pass.
+
 ## Prune skip-noise
 
 Before the size gate and triage, remove these from the diff and list them in triage as
@@ -45,7 +48,8 @@ Decide slim vs full by scope, not line count alone. Every count below is measure
 
 Before fanning out, compile a one-paragraph diff summary: files touched, their
 subsystems/dirs, whether tests changed, approximate size. If the caller supplied a change
-description (a pull request body, for example), say how the changes relate to it. Pass this
+description (a pull request body, for example), say how the changes relate to it. If the
+caller supplied recorded decisions, list each one with its source and author. Pass this
 summary to every sub-agent.
 
 Also compute a **comment-noise signal** and record it in the summary as
@@ -62,6 +66,9 @@ the pruned diff:
 - Any added comment asserts how a symbol outside its own package works inside, rather than
   naming it and pointing at its comment. Naming another package's function and saying what
   the call is for is fine; describing its internals is the trip.
+
+When the signal trips, name the criteria that matched. Do not cite example lines unless
+you cite every matching line: a reviewer handed a sample checks the sample and stops.
 
 The signal is advisory input to the Generalist's machine-authored-tells lens. It gates how
 hard that lens is applied, never which agents run.
@@ -115,14 +122,15 @@ Pass every agent:
 - the pruned diff,
 - the triage summary, including which agents were skipped and why,
 - any change description the caller supplied,
+- any recorded decisions the caller supplied,
 - the caller's Overrides.
 
 ## Validation
 
 After the selected agents complete, launch the validator (`subagent_type:
 review-validator`). Pass it the pruned diff, the triage summary (including skipped agents
-and the signals or absence behind each skip), every finding, any change description, and
-the caller's Overrides.
+and the signals or absence behind each skip), every finding, any change description, any
+recorded decisions, and the caller's Overrides.
 
 The validator owns its full process: dedupe, verify against source, score each finding
 inline as `[c:NN s:LVL]` (confidence 0–100, severity `low`|`med`|`high`), filter
@@ -156,4 +164,5 @@ Then present:
 4. **Positive observations**
 
 End with a brief overall assessment. If the caller supplied a change description, say
-whether the diff delivers what it claims.
+whether the diff delivers what it claims. If it supplied recorded decisions, name any the
+diff departs from without the description saying why.

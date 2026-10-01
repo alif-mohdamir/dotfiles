@@ -2,7 +2,7 @@
 name: review-pr
 description: Review a GitHub pull request using the gh CLI for both the diff and the PR description as context. Requires a PR number, URL, or branch as the argument. Orchestrates parallel sub-agents plus a validator, same pipeline as review-diff.
 disable-model-invocation: true
-allowed-tools: Agent AskUserQuestion Bash Read Grep Glob
+allowed-tools: Agent AskUserQuestion Bash Read Grep Glob mcp__claude_ai_Atlassian_Rovo__getJiraIssue
 ---
 
 # Review Pull Request
@@ -34,6 +34,28 @@ One `gh pr view` call: description (context) plus the head/merge fields the chec
 
 The description is the **change description** the pipeline's Triage and Aggregation stages
 refer to.
+
+## Linked tickets
+
+Collect the tickets the PR links, from two sources:
+
+- **GitHub issues**: the PR's `closingIssuesReferences`, plus any `github.com/.../issues/N`
+  URL in the description. Fetch each with
+  `gh issue view N --repo OWNER/REPO --json title,body,comments`.
+- **Jira issues**: a key in a `*.atlassian.net/browse/KEY` URL, a key opening the PR title
+  (`ABC-123: ...`), or a key on a description line that marks an issue link (`Resolves:`,
+  `Fixes:`, `Closes:`, `Related:`). Ignore bare `ABC-123` tokens elsewhere: `SHA-256` and
+  `UTF-8` match the same shape. Fetch each with an Atlassian `getJiraIssue` tool, such as
+  `mcp__claude_ai_Atlassian_Rovo__getJiraIssue` (`fields: ["description", "comment"]`,
+  `responseContentFormat: "markdown"`). If no such tool is in your tool list, skip the Jira
+  keys and record which ones you skipped.
+
+From each ticket's description and comments, pull out every instruction about this change
+(where code or tests go, names, what to drop or keep), with its author and a link or comment
+id. These are the pipeline's **recorded decisions**.
+
+If nothing is linked, record `Recorded decisions: none linked` in triage. Record a failed
+fetch or a skipped key in triage and continue. Do not treat that gap as a clean result.
 
 ## Diff
 

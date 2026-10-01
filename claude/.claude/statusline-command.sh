@@ -6,6 +6,7 @@ input=$(cat)
 cwd=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // ""')
 model=$(echo "$input" | jq -r '.model.display_name // ""')
 used=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
+cost=$(echo "$input" | jq -r '.cost.total_cost_usd // empty')
 
 # Shorten the directory: replace $HOME with ~
 home="$HOME"
@@ -38,20 +39,21 @@ if command -v jj >/dev/null 2>&1 && jj -R "$cwd" root >/dev/null 2>&1; then
   fi
 fi
 
-# Build the output
-parts=""
+# Build the output: dir and jj on line 1, everything else on line 2
+line1=""
+line2=""
 
 # Directory
-parts="${parts}$(printf '\033[34m%s\033[0m' "$short_dir")"
+line1="$(printf '\033[34m%s\033[0m' "$short_dir")"
 
 # jj info
 if [ -n "$jj_info" ]; then
-  parts="${parts} $(printf '\033[32m %s\033[0m' "$jj_info")"
+  line1="${line1} $(printf '\033[32m %s\033[0m' "$jj_info")"
 fi
 
 # Model
 if [ -n "$model" ]; then
-  parts="${parts} $(printf '\033[35m%s\033[0m' "$model")"
+  line2="$(printf '\033[35m%s\033[0m' "$model")"
 fi
 
 # Context usage
@@ -70,7 +72,13 @@ if [ -n "$used" ]; then
   empty=$(( bar_width - filled ))
   bar=$(printf '%0.s█' $(seq 1 $filled 2>/dev/null))
   bar="${bar}$(printf '%0.s░' $(seq 1 $empty 2>/dev/null))"
-  parts="${parts} $(printf "${color}ctx:%s%% %s\033[0m" "$used_int" "$bar")"
+  line2="${line2:+$line2 }$(printf "${color}ctx:%s%% %s\033[0m" "$used_int" "$bar")"
 fi
 
-printf '%s' "$parts"
+# Session cost
+if [ -n "$cost" ]; then
+  line2="${line2:+$line2 }$(printf '\033[33m$%.2f\033[0m' "$cost")"
+fi
+
+printf '%s' "$line1"
+if [ -n "$line2" ]; then printf '\n%s' "$line2"; fi

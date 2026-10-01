@@ -102,7 +102,7 @@ slug=${headRefName//\//-}; dir="../.pr-review-$repo-$slug"
 jj git fetch
 if jj workspace list | grep -q "^$slug:"; then
   jj -R "$dir" workspace update-stale 2>/dev/null      # de-stale
-  jj -R "$dir" edit "$headRefName@origin"
+  jj -R "$dir" new "$headRefName@origin"               # jj snapshots into @; edit would let review-time writes amend the PR commit
 else
   jj workspace add --name "$slug" -r "$headRefName@origin" "$dir"
 fi

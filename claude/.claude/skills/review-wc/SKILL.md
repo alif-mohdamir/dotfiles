@@ -24,7 +24,8 @@ matches `jj diff`:
 
 ## Slim target
 
-Invoke the `review-wc-slim` skill and stop.
+Launch the `review-slim` agent (`subagent_type: review-slim`) with the pruned diff, format
+per the pipeline's Aggregation stage, then stop.
 
 ## Overrides
 

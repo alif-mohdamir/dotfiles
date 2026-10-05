@@ -26,7 +26,8 @@ back to `trunk()` / `origin/main`.
 
 ## Slim target
 
-Invoke the `review-diff-slim` skill and stop.
+Launch the `review-slim` agent (`subagent_type: review-slim`) with the pruned diff and the
+Overrides below, format per the pipeline's Aggregation stage, then stop.
 
 ## Overrides
 

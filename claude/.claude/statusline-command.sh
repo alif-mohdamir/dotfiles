@@ -10,7 +10,7 @@ cost=$(echo "$input" | jq -r '.cost.total_cost_usd // empty')
 
 # Shorten the directory: replace $HOME with ~
 home="$HOME"
-short_dir="${cwd/#$home/~}"
+short_dir="${cwd/#$home/\~}"
 
 # jj VCS info (--ignore-working-copy avoids expensive snapshotting on each call)
 jj_info=""

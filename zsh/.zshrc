@@ -7,7 +7,7 @@ export ZSH="$HOME/.oh-my-zsh"
 
 # User configuration
 source ~/.zsh_profile
-source ~/.zsh_profile_local
+[[ -f ~/.zsh_profile_local ]] && source ~/.zsh_profile_local
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,

@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# Colocates jj with every git repo directly under each LOCAL_WORKSPACES entry.
+
+if [[ -z $LOCAL_WORKSPACES ]]; then
+	echo "LOCAL_WORKSPACES is not set" >&2
+	exit 1
+fi
+
+# eval expands the ~ that LOCAL_WORKSPACES entries may hold literally; sort -u drops repos listed by overlapping entries
+eval find $LOCAL_WORKSPACES -mindepth 2 -maxdepth 2 -name .git -type d | sort -u | while read -r git_dir; do
+	repo=$(dirname "$git_dir")
+	[[ -d $repo/.jj ]] && continue
+	echo "== $repo"
+	(cd "$repo" && jj git init) || echo "failed: $repo" >&2
+done

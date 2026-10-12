@@ -9,8 +9,13 @@ used=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 cost=$(echo "$input" | jq -r '.cost.total_cost_usd // empty')
 
 # Shorten the directory: replace $HOME with ~
+# Quote the tilde: bash 4.4+ expands it in ${var/pat/repl}, and bash 3.2 prints \~ literally.
 home="$HOME"
-short_dir="${cwd/#$home/\~}"
+if [[ $cwd == "$home" || $cwd == "$home"/* ]]; then
+  short_dir="~${cwd#"$home"}"
+else
+  short_dir="$cwd"
+fi
 
 # jj VCS info (--ignore-working-copy avoids expensive snapshotting on each call)
 jj_info=""

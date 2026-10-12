@@ -35,3 +35,6 @@ pager = "delta"
 [aliases]
 # `jj restack` to rebase your changes onto `trunk()`
 restack = ["rebase", "--onto", "trunk()", "--source", "roots(trunk()..) & mutable()", "--simplify-parents"]
+
+[remotes.origin]
+auto-track-bookmarks = "main | master"

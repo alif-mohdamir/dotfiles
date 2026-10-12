@@ -25,3 +25,6 @@ export PATH="/opt/homebrew/opt/mysql-client/bin:$PATH"
 export PKG_CONFIG_PATH="/opt/homebrew/opt/mysql-client/lib/pkgconfig"
 
 export PATH="$HOME/scripts:$PATH"
+
+# Claude Code installs its CLI here; nothing else puts it on PATH
+export PATH="$HOME/.local/bin:$PATH"

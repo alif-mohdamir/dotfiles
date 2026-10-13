@@ -1,0 +1,5 @@
+export EDITOR=nvim VISUAL=nvim
+export PATH="$HOME/.local/bin:$HOME/scripts:$PATH"
+# Dev boxes clone repos into ~/src
+export LOCAL_WORKSPACES="$HOME/src $HOME/projects"
+bindkey -s ^f "tmux-sessionizer\n"

@@ -2,7 +2,6 @@
 set -euo pipefail
 
 DOTFILES=${DOTFILES:-$(cd "$(dirname "$0")" && pwd)}
-login_path=$PATH
 BIN=~/.local/bin
 OPT=~/.local/opt
 mkdir -p "$BIN" "$OPT"
@@ -20,7 +19,7 @@ x86_64)
 	;;
 esac
 
-packages=(git make gcc unzip curl tar gzip stow tmux ripgrep)
+packages=(git make gcc unzip curl tar gzip stow tmux ripgrep fzf)
 if command -v apt-get >/dev/null; then
 	sudo apt-get update
 	sudo apt-get install -y "${packages[@]}"
@@ -77,9 +76,9 @@ else
 	echo "warning: no stow; dotfiles not linked" >&2
 fi
 
-nvim --headless '+Lazy! restore' '+MasonToolsInstallSync' +qa
+# Sourced from the box's own .zshrc, which carries the box's setup and stays in place
+zshrc_line="[[ -f \"$DOTFILES/linux/zshrc\" ]] && source \"$DOTFILES/linux/zshrc\""
+touch ~/.zshrc
+grep -qxF "$zshrc_line" ~/.zshrc || printf '\n%s\n' "$zshrc_line" >>~/.zshrc
 
-case ":$login_path:" in
-*":$BIN:"*) ;;
-*) echo "add $BIN to PATH in your shell profile" >&2 ;;
-esac
+nvim --headless '+Lazy! restore' '+MasonToolsInstallSync' +qa

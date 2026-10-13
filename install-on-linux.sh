@@ -31,27 +31,32 @@ else
 	echo "no apt-get or dnf; install these yourself: ${packages[*]}" >&2
 fi
 
-command -v gh >/dev/null || { echo "gh is required to download releases" >&2; exit 1; }
-
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
-gh release download -R neovim/neovim stable -p "nvim-linux-$nvim_arch.tar.gz" -D "$tmp"
+# curl, not gh: dev boxes can run this when they clone the repo, before gh is signed in
+download() { curl -fsSL "https://github.com/$1/releases/$2" -o "$tmp/$(basename "$2")"; }
+latest_tag() { curl -fsSLI -o /dev/null -w '%{url_effective}' "https://github.com/$1/releases/latest" | sed 's|.*/tag/||'; }
+
+download neovim/neovim "download/stable/nvim-linux-$nvim_arch.tar.gz"
 rm -rf "$OPT/nvim-linux-$nvim_arch"
 tar -xzf "$tmp/nvim-linux-$nvim_arch.tar.gz" -C "$OPT"
 ln -sfn "$OPT/nvim-linux-$nvim_arch/bin/nvim" "$BIN/nvim"
 
-gh release download -R tree-sitter/tree-sitter -p "tree-sitter-linux-$ts_arch.gz" -D "$tmp"
+download tree-sitter/tree-sitter "latest/download/tree-sitter-linux-$ts_arch.gz"
 gunzip -c "$tmp/tree-sitter-linux-$ts_arch.gz" >"$BIN/tree-sitter"
 chmod +x "$BIN/tree-sitter"
 
-gh release download -R jesseduffield/lazygit -p "lazygit_*_linux_$lazygit_arch.tar.gz" -D "$tmp"
-tar -xzf "$tmp"/lazygit_*_linux_"$lazygit_arch".tar.gz -C "$BIN" lazygit
+lazygit_version=$(latest_tag jesseduffield/lazygit)
+lazygit_file="lazygit_${lazygit_version#v}_linux_$lazygit_arch.tar.gz"
+download jesseduffield/lazygit "download/$lazygit_version/$lazygit_file"
+tar -xzf "$tmp/$lazygit_file" -C "$BIN" lazygit
 
 if ! command -v rg >/dev/null; then
-	gh release download -R BurntSushi/ripgrep -p "ripgrep-*-$rg_target.tar.gz" -D "$tmp"
-	tar -xzf "$tmp"/ripgrep-*-"$rg_target".tar.gz -C "$tmp"
-	cp "$tmp"/ripgrep-*-"$rg_target"/rg "$BIN/rg"
+	rg_version=$(latest_tag BurntSushi/ripgrep)
+	download BurntSushi/ripgrep "download/$rg_version/ripgrep-$rg_version-$rg_target.tar.gz"
+	tar -xzf "$tmp/ripgrep-$rg_version-$rg_target.tar.gz" -C "$tmp"
+	cp "$tmp/ripgrep-$rg_version-$rg_target/rg" "$BIN/rg"
 fi
 
 # Some boxes keep go behind goenv, which non-interactive shells leave off PATH
@@ -64,6 +69,8 @@ fi
 command -v npm >/dev/null || echo "warning: no npm on PATH; ts_ls, pyright and markdownlint will not install" >&2
 
 if command -v stow >/dev/null; then
+	# Without it stow folds all of ~/.config into a link to the repo, and gh, jj and the rest then write into the clone
+	mkdir -p ~/.config
 	export STOW_FOLDERS=${STOW_FOLDERS:-nvim,tmux,bin} DOTFILES
 	"$DOTFILES/stow-dotfiles.sh"
 else

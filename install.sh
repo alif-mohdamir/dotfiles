@@ -1,11 +1,14 @@
 #!/bin/bash
 #
-if [[ -z $STOW_FOLDERS ]]; then
-	STOW_FOLDERS="bin,nvim,tmux,zsh,alacritty,starship,claude,jj"
+DOTFILES=${DOTFILES:-$(cd "$(dirname "$0")" && pwd)}
+
+# Remote dev boxes run this when they clone the repo, where the macOS set would overlay the box's own Claude and shell setup
+if [[ $(uname -s) == Linux ]]; then
+	exec "$DOTFILES/install-on-linux.sh"
 fi
 
-if [[ -z $DOTFILES ]]; then
-	DOTFILES=~/projects/dotfiles
+if [[ -z $STOW_FOLDERS ]]; then
+	STOW_FOLDERS="bin,nvim,tmux,zsh,alacritty,starship,claude,jj"
 fi
 
 STOW_FOLDERS=$STOW_FOLDERS DOTFILES=$DOTFILES $DOTFILES/stow-dotfiles.sh

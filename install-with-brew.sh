@@ -21,6 +21,7 @@ brew install jj
 brew install git-delta
 brew install direnv
 brew install umputun/apps/revdiff
+brew install PeonPing/tap/peon-ping
 
 # Install oh-my-zsh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"

@@ -12,6 +12,7 @@ brew install fzf
 brew install gh
 brew install lazygit
 brew install neovim
+brew install tree-sitter-cli
 brew install ripgrep
 brew install --cask font-jetbrains-mono-nerd-font
 brew install stow

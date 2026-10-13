@@ -166,3 +166,6 @@ Then present:
 End with a brief overall assessment. If the caller supplied a change description, say
 whether the diff delivers what it claims. If it supplied recorded decisions, name any the
 diff departs from without the description saying why.
+
+Before turning findings into PR comments, whether posted or handed over as drafts, load the
+`conventional-comments` skill. It maps these buckets to comment labels.

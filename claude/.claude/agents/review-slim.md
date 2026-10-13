@@ -16,6 +16,11 @@ Coverage:
 
 Rules:
 - Flag only added/removed lines. Verify context lines via Read before flagging — they may be stale.
+- For a test that asserts a refusal from a layered chain (middleware, auth, validation),
+  check two things. An adjacent layer must not produce the same observable reply, and the
+  fixture input must survive every layer before the one under test, including library
+  re-validation. Treat the test's doc comment about which layer answered as a claim to
+  verify.
 - `file:line` per finding.
 - Report every finding with an inline `[c:NN s:LVL]` tag — confidence `0–100`, severity `low|med|high`. They're independent: a high-confidence typo is `[c:90 s:low]`, a plausible auth bypass is `[c:60 s:high]`.
   - **Confidence:** 0–25 false positive / pre-existing; 26–50 nitpick; 51–75 plausible; 76–100 confirmed.

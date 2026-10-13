@@ -156,6 +156,10 @@ bucket:
 | 26–50 | any | Suggestions |
 | 0–25 | any | suppressed (unless `[pre-existing]` high → Important) |
 
+Before presenting, spot-check each surviving finding's anchor yourself. A claim about the
+change description must match a verbatim quote from the live body, and each `file:line`
+must hold up under a targeted Read.
+
 Then present:
 
 1. **Critical** (must fix)

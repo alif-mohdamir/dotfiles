@@ -7,20 +7,33 @@ else
 	#   should be listed (e.g. ~/projects lists ~/projects/foo, ~/projects/bar).
 	# LOCAL_WORKSPACE_DIRS: space separated paths that should be listed as-is
 	#   (e.g. ~/.claude appears in fzf itself, not its children).
+	# ~/.config/tmux-sessionizer/sources/*: machine-local executables whose output
+	#   lines are added as-is: a directory, or "name<TAB>command" for a session
+	#   that runs command.
 	selected=$({
 		[[ -n $LOCAL_WORKSPACES ]] && eval find $LOCAL_WORKSPACES -mindepth 1 -maxdepth 1 -type d
 		[[ -n $LOCAL_WORKSPACE_DIRS ]] && eval find $LOCAL_WORKSPACE_DIRS -maxdepth 0 -type d
-	} | fzf)
+		# stdin from /dev/null so a source can't prompt while fzf owns the terminal
+		for source in ~/.config/tmux-sessionizer/sources/*; do
+			[[ -x $source ]] && "$source" </dev/null 2>/dev/null
+		done
+	} | fzf --delimiter=$'\t' --with-nth=1)
 fi
 
 if [[ -z $selected ]]; then
 	exit 0
 fi
 
-selected_name=$(basename "$selected" | tr . _)
+if [[ $selected == *$'\t'* ]]; then
+	selected_name=$(cut -f1 <<<"$selected" | tr ./: ___)
+	new_session_args=("$(cut -f2- <<<"$selected")")
+else
+	selected_name=$(basename "$selected" | tr . _)
+	new_session_args=(-c "$selected")
+fi
 
 if ! tmux has-session -t=$selected_name 2>/dev/null; then
-	tmux new-session -ds $selected_name -c $selected
+	tmux new-session -ds $selected_name "${new_session_args[@]}"
 fi
 
 # attach-session only works if we are not in a tmux session

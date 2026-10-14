@@ -20,6 +20,20 @@ vim.opt.showmode = false
 --  See `:help 'clipboard'`
 vim.opt.clipboard = 'unnamedplus'
 
+-- Over SSH there is no clipboard tool and OSC 52 auto-detection fails through tmux.
+-- Paste reads the unnamed register because Alacritty refuses OSC 52 reads and nvim would hang on p.
+if vim.env.SSH_TTY then
+  local osc52 = require('vim.ui.clipboard.osc52')
+  local function paste()
+    return { vim.fn.split(vim.fn.getreg(''), '\n'), vim.fn.getregtype('') }
+  end
+  vim.g.clipboard = {
+    name = 'OSC 52',
+    copy = { ['+'] = osc52.copy('+'), ['*'] = osc52.copy('*') },
+    paste = { ['+'] = paste, ['*'] = paste },
+  }
+end
+
 -- Enable break indent
 vim.opt.breakindent = true
 

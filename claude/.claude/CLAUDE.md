@@ -41,3 +41,10 @@ Use it when a task spans repos rather than guessing paths.
 - The shell is zsh: unquoted `$LOCAL_WORKSPACES` does not word-split. Use `${=LOCAL_WORKSPACES}`.
 - Entries may contain a literal `~`; expand it (`${w/#\~/$HOME}`) before testing the path.
 - Entries can overlap, so the same repo may appear more than once. Deduplicate before acting.
+
+## Dotfiles
+
+My dotfiles repo (`alif-mohdamir/dotfiles`) is public and installs on my work and personal
+machines. This file is stowed from it: `readlink -f ~/.claude/CLAUDE.md` points into the
+clone, at `claude/.claude/CLAUDE.md`. Keep employer-specific names, tools and paths out of it, including commit
+messages, and put machine-specific setup in local files. Its `AGENTS.md` lists those files.

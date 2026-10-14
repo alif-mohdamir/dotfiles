@@ -74,11 +74,20 @@ if command -v go >/dev/null; then
 else
 	echo "warning: no go on PATH; gopls, delve and goimports will not install" >&2
 fi
+# nvm's node is on PATH only in interactive shells, and Mason needs npm for ts_ls, pyright and markdownlint
+if [[ -d ~/.nvm/versions/node ]]; then
+	node_bin=$(find ~/.nvm/versions/node -mindepth 2 -maxdepth 2 -name bin -type d | sort -V | tail -1)
+	export PATH="$node_bin:$PATH"
+fi
 command -v npm >/dev/null || echo "warning: no npm on PATH; ts_ls, pyright and markdownlint will not install" >&2
 
 if command -v stow >/dev/null; then
 	# Without it stow folds all of ~/.config into a link to the repo, and gh, jj and the rest then write into the clone
 	mkdir -p ~/.config
+	# Box images ship a starter nvim config; stow would keep it, and this repo's config would never load
+	if [[ -d ~/.config/nvim && ! -L ~/.config/nvim && ! -e ~/.config/nvim.box-default ]]; then
+		mv ~/.config/nvim ~/.config/nvim.box-default
+	fi
 	export STOW_FOLDERS=${STOW_FOLDERS:-nvim,tmux,bin,jj} DOTFILES
 	"$DOTFILES/stow-dotfiles.sh"
 else

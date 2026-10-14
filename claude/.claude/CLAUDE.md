@@ -46,5 +46,6 @@ Use it when a task spans repos rather than guessing paths.
 
 My dotfiles repo (`alif-mohdamir/dotfiles`) is public and installs on my work and personal
 machines. This file is stowed from it: `readlink -f ~/.claude/CLAUDE.md` points into the
-clone, at `claude/.claude/CLAUDE.md`. Keep employer-specific names, tools and paths out of it, including commit
-messages, and put machine-specific setup in local files. Its `AGENTS.md` lists those files.
+clone, at `claude/.claude/CLAUDE.md`. Keep employer-specific names, tools and paths out of
+it, including commit messages, and put machine-specific setup in local files. Its
+`AGENTS.md` lists those files.

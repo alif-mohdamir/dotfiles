@@ -8,10 +8,10 @@ mkdir -p "$BIN" "$OPT"
 
 case $(uname -m) in
 aarch64 | arm64)
-	nvim_arch=arm64 ts_arch=arm64 lazygit_arch=arm64 rg_target=aarch64-unknown-linux-gnu
+	nvim_arch=arm64 ts_arch=arm64 lazygit_arch=arm64 rust_target=aarch64-unknown-linux-gnu jj_target=aarch64-unknown-linux-musl
 	;;
 x86_64)
-	nvim_arch=x86_64 ts_arch=x64 lazygit_arch=x86_64 rg_target=x86_64-unknown-linux-musl
+	nvim_arch=x86_64 ts_arch=x64 lazygit_arch=x86_64 rust_target=x86_64-unknown-linux-musl jj_target=x86_64-unknown-linux-musl
 	;;
 *)
 	echo "unsupported architecture: $(uname -m)" >&2
@@ -53,10 +53,19 @@ tar -xzf "$tmp/$lazygit_file" -C "$BIN" lazygit
 
 if ! command -v rg >/dev/null; then
 	rg_version=$(latest_tag BurntSushi/ripgrep)
-	download BurntSushi/ripgrep "download/$rg_version/ripgrep-$rg_version-$rg_target.tar.gz"
-	tar -xzf "$tmp/ripgrep-$rg_version-$rg_target.tar.gz" -C "$tmp"
-	cp "$tmp/ripgrep-$rg_version-$rg_target/rg" "$BIN/rg"
+	download BurntSushi/ripgrep "download/$rg_version/ripgrep-$rg_version-$rust_target.tar.gz"
+	tar -xzf "$tmp/ripgrep-$rg_version-$rust_target.tar.gz" -C "$tmp"
+	cp "$tmp/ripgrep-$rg_version-$rust_target/rg" "$BIN/rg"
 fi
+
+jj_version=$(latest_tag jj-vcs/jj)
+download jj-vcs/jj "download/$jj_version/jj-$jj_version-$jj_target.tar.gz"
+tar -xzf "$tmp/jj-$jj_version-$jj_target.tar.gz" -C "$BIN" ./jj
+
+delta_version=$(latest_tag dandavison/delta)
+download dandavison/delta "download/$delta_version/delta-$delta_version-$rust_target.tar.gz"
+tar -xzf "$tmp/delta-$delta_version-$rust_target.tar.gz" -C "$tmp"
+cp "$tmp/delta-$delta_version-$rust_target/delta" "$BIN/delta"
 
 # Some boxes keep go behind goenv, which non-interactive shells leave off PATH
 export PATH="$BIN:$HOME/.goenv/bin:$HOME/.goenv/shims:$HOME/go/bin:$PATH"
@@ -70,7 +79,7 @@ command -v npm >/dev/null || echo "warning: no npm on PATH; ts_ls, pyright and m
 if command -v stow >/dev/null; then
 	# Without it stow folds all of ~/.config into a link to the repo, and gh, jj and the rest then write into the clone
 	mkdir -p ~/.config
-	export STOW_FOLDERS=${STOW_FOLDERS:-nvim,tmux,bin} DOTFILES
+	export STOW_FOLDERS=${STOW_FOLDERS:-nvim,tmux,bin,jj} DOTFILES
 	"$DOTFILES/stow-dotfiles.sh"
 else
 	echo "warning: no stow; dotfiles not linked" >&2
@@ -80,5 +89,19 @@ fi
 zshrc_line="[[ -f \"$DOTFILES/linux/zshrc\" ]] && source \"$DOTFILES/linux/zshrc\""
 touch ~/.zshrc
 grep -qxF "$zshrc_line" ~/.zshrc || printf '\n%s\n' "$zshrc_line" >>~/.zshrc
+
+jj_user=~/.config/jj/conf.d/user.toml
+if [[ ! -f $jj_user ]]; then
+	git_name=$(git config --global user.name || true)
+	git_email=$(git config --global user.email || true)
+	if [[ -n $git_name && -n $git_email ]]; then
+		mkdir -p "$(dirname "$jj_user")"
+		printf '[user]\nname = "%s"\nemail = "%s"\n' "$git_name" "$git_email" >"$jj_user"
+	else
+		echo "warning: no git user.name/user.email; create $jj_user with a [user] name and email" >&2
+	fi
+fi
+
+LOCAL_WORKSPACES="$HOME/src $HOME/projects" "$DOTFILES/bin/scripts/jj-init-all"
 
 nvim --headless '+Lazy! restore' '+MasonToolsInstallSync' +qa

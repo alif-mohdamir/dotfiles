@@ -156,3 +156,9 @@ pr-review-clean() {
   fi
   (( found )) || print -r -- "No .pr-review-* checkouts found for $root."
 }
+
+# A program that dies without turning mouse tracking off (ssh dropped by sleep) leaves the
+# terminal typing mouse reports into the prompt.
+_reset_mouse_tracking() { printf '\e[?1000l\e[?1002l\e[?1003l\e[?1006l' }
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd _reset_mouse_tracking

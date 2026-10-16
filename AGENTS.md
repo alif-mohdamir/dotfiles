@@ -10,6 +10,7 @@ and Linux dev boxes.
   - `~/.zsh_profile_local`, sourced by `.zshrc`
   - `~/.config/jj/conf.d/user.toml`, for jj's `[user]` and `[signing]`
   - `~/.config/tmux-sessionizer/sources/`, for extra sessionizer entries
+  - `~/.tmux.local.conf`, sourced at the end of `.tmux.conf`
 - A script must still work on a machine that lacks a tool it can use. Check with
   `command -v` and skip that step.
 - `install.sh` also runs on Linux, where it hands off to `install-on-linux.sh`. Before

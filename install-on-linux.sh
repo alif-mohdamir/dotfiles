@@ -111,6 +111,5 @@ if [[ ! -f $jj_user ]]; then
 	fi
 fi
 
-LOCAL_WORKSPACES="$HOME/src $HOME/projects" "$DOTFILES/bin/scripts/jj-init-all"
-
+# No jj-init-all here: dev boxes pull their own clones only on an attached branch, and jj detaches HEAD on its first new commit
 nvim --headless '+Lazy! restore' '+MasonToolsInstallSync' +qa

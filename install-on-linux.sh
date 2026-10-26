@@ -88,6 +88,10 @@ if command -v stow >/dev/null; then
 	if [[ -d ~/.config/nvim && ! -L ~/.config/nvim && ! -e ~/.config/nvim.box-default ]]; then
 		mv ~/.config/nvim ~/.config/nvim.box-default
 	fi
+	# Same for the box's ~/.tmux.conf, except stow refuses outright and the run carries on without the tmux package
+	if [[ -f ~/.tmux.conf && ! -L ~/.tmux.conf && ! -e ~/.tmux.conf.box-default ]]; then
+		mv ~/.tmux.conf ~/.tmux.conf.box-default
+	fi
 	export STOW_FOLDERS=${STOW_FOLDERS:-nvim,tmux,bin,jj} DOTFILES
 	"$DOTFILES/stow-dotfiles.sh"
 else

@@ -54,7 +54,12 @@ key = "ssh-ed25519 AAAA..."
 
 `~/.claude/settings.json` is generated, not stowed. `claude-settings/generate.sh` merges
 `claude-settings/settings.base.json` with `~/.claude/settings.machine.json`, if that file
-exists.
+exists. The machine file wins on conflicts, and an array in it replaces the base array
+instead of extending it. Removing a key from the base file does not remove it from a
+machine file that sets it.
+
+The compound-engineering marketplace is pinned to a release tag in the base file. Bump
+`ref` there to upgrade, then re-add the marketplace with the new tag.
 
 If `settings.json` was edited after it was generated, the generator stops and prints a diff
 instead of overwriting it. Move the changes you want to keep into one of the two source

@@ -170,7 +170,8 @@
   "enabledPlugins": {
     "gopls-lsp@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
-    "revdiff@revdiff": true
+    "revdiff@revdiff": true,
+    "compound-engineering@compound-engineering-plugin": true
   },
   "extraKnownMarketplaces": {
     "revdiff": {
@@ -178,11 +179,19 @@
         "source": "github",
         "repo": "umputun/revdiff"
       }
+    },
+    "compound-engineering-plugin": {
+      "source": {
+        "source": "github",
+        "repo": "EveryInc/compound-engineering-plugin",
+        "ref": "compound-engineering-v3.33.1"
+      }
     }
   },
   "outputStyle": "Plain Prose",
   "feedbackDrafts": "off",
   "effortLevel": "medium",
   "tui": "fullscreen",
+  "theme": "auto",
   "skipAutoPermissionPrompt": true
 }

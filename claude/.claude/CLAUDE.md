@@ -7,10 +7,10 @@
 ## Before starting work
 
 Before starting a task with real choices in it (a feature, a plan, a design, or a fix with
-more than one reasonable approach), run the `grill-me` skill and settle the open questions
-with me first. Skip it when the request already fixes the outcome, such as a rebase, a
-branch cleanup or rerunning a check. End with the list of settled decisions, tagged as in
-Handoffs.
+more than one reasonable approach), run the `ce-brainstorm` skill and settle the open
+questions with me first. If that skill is not installed, run `grill-me` instead. Skip it
+when the request already fixes the outcome, such as a rebase, a branch cleanup or
+rerunning a check. End with the list of settled decisions, tagged as in Handoffs.
 
 ## Commits and pull requests
 

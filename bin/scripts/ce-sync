@@ -145,6 +145,12 @@ reconcile() {
 	tracked >"$work/tracked"
 	listing "$dir" "$work/tracked" >"$work/local"
 	listing "$snap" "$work/tracked" >"$work/store"
+	# git clean or rm -rf would otherwise delete every file from the store and then from every machine.
+	# Losing the only synced file is an ordinary delete.
+	if (($(wc -l <"$record") > 1)) && ! cut -d' ' -f2- "$record" | grep -qxF -f <(cut -d' ' -f2- "$work/local"); then
+		warn "every file synced before is missing from $dir; changed nothing (delete $record to sync from scratch)"
+		return 1
+	fi
 	: >"$work/record"
 	: >"$work/notices"
 	cut -d' ' -f2- "$work/local" "$work/store" "$record" | LC_ALL=C sort -u | while IFS= read -r p; do

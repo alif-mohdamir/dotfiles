@@ -424,6 +424,36 @@ merged=$(jq --slurpfile base "$base" -f "$filter" "$tmp/case/settings.json") || 
 	fail "Stop hooks: $(jq -c .hooks.Stop <<<"$merged")"
 [[ $(jq --slurpfile base "$base" -f "$filter" <<<"$merged") == "$(jq . <<<"$merged")" ]] || fail "merge is not idempotent"
 
+begin "a wiped .ce/ deletes nothing from the store"
+two_machines
+echo one >"$local_a/solutions/one.md"
+echo two >"$local_a/plans/two.md"
+on a
+on b
+rm -rf "$local_a"
+mkdir -p "$local_a/solutions"
+echo new >"$local_a/solutions/new.md"
+on a
+assert_content "$store/solutions/one.md" one
+assert_content "$store/plans/two.md" two
+grep -q "ce-sync-record" "$tmp/stderr-a" || fail "warning does not say how to start over: $(cat "$tmp/stderr-a")"
+on b
+assert_content "$local_b/solutions/one.md" one
+rm "$tmp/case/a/.git/ce-sync-record"
+on a
+assert_content "$local_a/solutions/one.md" one
+assert_content "$store/solutions/new.md" new
+
+begin "deleting some synced files still propagates"
+two_machines
+echo one >"$local_a/solutions/one.md"
+echo two >"$local_a/solutions/two.md"
+on a
+rm "$local_a/solutions/one.md"
+on a
+assert_no_file "$store/solutions/one.md"
+assert_content "$store/solutions/two.md" two
+
 if ((failures)); then
 	echo "$failures failure(s)"
 	exit 1

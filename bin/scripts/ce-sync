@@ -1,28 +1,40 @@
 #!/bin/bash
-# ce-sync: keep a checkout's compound-engineering artifacts (.ce/) in a private store, out of the repo's history.
+# ce-sync: keep a checkout's compound-engineering learnings and plans (.ce/solutions, .ce/plans) in a private
+# store, out of the repo's history, in step across machines.
 #
-#   ce-sync pull         push anything unpushed, then pull, for the checkout around the current directory
-#   ce-sync push         push if .ce/ changed since the last sync
-#   ce-sync hook-start   pull, for a Claude SessionStart hook
-#   ce-sync hook-stop    push, for a Claude Stop hook
+#   ce-sync pull         sync the checkout around the current directory with the store
+#   ce-sync push         the same
+#   ce-sync hook-start   sync, for a Claude SessionStart hook
+#   ce-sync hook-stop    sync if anything changed locally, for Claude Stop and SessionEnd hooks
 #
-# The store is whatever two commands in ~/.config/ce-sync/config say, with %r for the repo name and
-# %d for the local .ce directory. Without that file every subcommand does nothing.
+# The store is whatever commands in ~/.config/ce-sync/config say, with %r for the repo name, %d for a
+# directory to download into, %f for a local file and %p for its path within the repo's folder. Without
+# that file every subcommand does nothing.
 #
-#   CE_SYNC_PULL='store-cli get learnings:%r/ %d -r'
-#   CE_SYNC_PUSH='store-cli put %d learnings:%r/ -r'
+#   CE_SYNC_PULL='store-cli get learnings:%r/ %d -r'   download the repo's folder into %d
+#   CE_SYNC_PUT='store-cli put %f learnings:%r/%p'     upload one file
+#   CE_SYNC_RM='store-cli rm learnings:%r/%p'          delete one file
+#   CE_SYNC_HOST=laptop                                names this machine's conflict copies (default: hostname)
+#
+# A file changed on one side since the last sync takes that side's version on both. When both sides
+# changed it, the store's version keeps the name and this machine's is kept beside it as
+# <name>.conflict-<host>.<ext>. A delete reaches the other side unless the file was edited there.
 set -uo pipefail
 
 CONFIG=${CE_SYNC_CONFIG:-~/.config/ce-sync/config}
 CE_DIR=.ce
 CE_CONFIG=.compound-engineering/config.yaml
+SYNCED="solutions plans"
+# Never deleted, so a download that lacks it means the store was unreachable rather than emptied
+MARKER=.ce-sync
 
 [[ -r $CONFIG ]] || exit 0
 # shellcheck source=/dev/null
 source "$CONFIG"
-[[ -n ${CE_SYNC_PULL:-} && -n ${CE_SYNC_PUSH:-} ]] || exit 0
+[[ -n ${CE_SYNC_PULL:-} ]] || exit 0
 
-warn() { echo "ce-sync: $*" >&2; }
+notices=()
+warn() { notices+=("$*"); }
 
 resolve() {
 	root=$(git -C "$1" rev-parse --show-toplevel 2>/dev/null) || return 1
@@ -31,12 +43,13 @@ resolve() {
 	if [[ -f $root/$CE_CONFIG ]] && ! grep -qx "docs_root: $CE_DIR" "$root/$CE_CONFIG"; then
 		return 1
 	fi
-	local url
+	local url gitdir
 	url=$(git -C "$root" remote get-url origin 2>/dev/null) || url=$root
 	repo=$(basename "${url%/}" .git)
 	dir=$root/$CE_DIR
-	# Per worktree, and outside .ce/ so it is never pushed
-	stamp=$(git -C "$root" rev-parse --absolute-git-dir)/ce-sync-stamp
+	# Per worktree, and outside .ce/ so it is never synced
+	gitdir=$(git -C "$root" rev-parse --absolute-git-dir)
+	record=$gitdir/ce-sync-record
 }
 
 init() {
@@ -52,30 +65,125 @@ init() {
 	done
 }
 
-digest() {
-	(cd "$dir" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 cksum) | cksum
+sum() { cksum <"$1" | awk '{ print $1 "-" $2 }'; }
+
+# "<checksum> <path>" for each synced file under $1 that git does not track, sorted by path
+listing() {
+	local p
+	(cd "$1" && for d in $SYNCED; do [[ -d $d ]] && find "$d" -type f; done) | LC_ALL=C sort |
+		while IFS= read -r p; do
+			git -C "$root" ls-files --error-unmatch "$CE_DIR/$p" >/dev/null 2>&1 || echo "$(sum "$1/$p") $p"
+		done
 }
+
+lookup() { awk -v p="$2" 'substr($0, index($0, " ") + 1) == p { print $1; exit }' "$1"; }
 
 run() {
 	local cmd=${1//%r/$(printf %q "$repo")}
-	cmd=${cmd//%d/$(printf %q "$dir")}
-	bash -c "$cmd"
+	cmd=${cmd//%d/$(printf %q "${2:-}")}
+	cmd=${cmd//%f/$(printf %q "${3:-}")}
+	cmd=${cmd//%p/$(printf %q "${4:-}")}
+	bash -c "$cmd" >/dev/null 2>&1
 }
 
-push() {
-	[[ -n $(find "$dir" -type f -print -quit) ]] || return 0
-	[[ -f $stamp && $(digest) == "$(cat "$stamp")" ]] && return 0
-	# SessionStart adds a hook's stdout to Claude's context
-	run "$CE_SYNC_PUSH" >/dev/null || { warn "push of $dir failed"; return 1; }
-	digest >"$stamp"
+put() { run "$CE_SYNC_PUT" "" "$1" "$2"; }
+
+conflict_name() {
+	local base=${1%.*} ext=${1##*.} host=${CE_SYNC_HOST:-$(hostname -s)}
+	if [[ $base == "$1" || $base == */ ]]; then
+		echo "$1.conflict-$host"
+	else
+		echo "$base.conflict-$host.$ext"
+	fi
 }
 
-# A pull overwrites matching local files, so anything unpushed goes up first
-pull() {
-	push || return 1
-	# The store holds nothing for a repo until its first push, so a failed pull only warns
-	run "$CE_SYNC_PULL" >/dev/null || warn "pull into $dir failed or found nothing"
-	digest >"$stamp"
+# Download the store into $snap. With no record yet, a missing marker may only mean a new folder, so put
+# the marker and download again before trusting the snapshot.
+download() {
+	snap=$work/snap
+	rm -rf "$snap" && mkdir -p "$snap"
+	run "$CE_SYNC_PULL" "$snap"
+	local rc=$?
+	[[ $rc == 0 && -f $snap/$MARKER ]] && return 0
+	if [[ -s $record ]]; then
+		warn "the store's folder for $repo was unreachable; changed nothing"
+		return 1
+	fi
+	echo "ce-sync marker: keep this file" >"$work/marker"
+	put "$work/marker" "$MARKER" || { warn "could not reach the store for $repo"; return 1; }
+	rm -rf "$snap" && mkdir -p "$snap"
+	run "$CE_SYNC_PULL" "$snap" && [[ -f $snap/$MARKER ]] && return 0
+	warn "the store's folder for $repo did not come back after setup; changed nothing"
+	return 1
+}
+
+take() {
+	mkdir -p "$(dirname "$dir/$2")" && cp "$1" "$dir/$2"
+}
+
+# Decide each path from its local (l), store (s) and last-synced (b) checksums. A failed step keeps the
+# path's old record entry, so the next sync decides it again.
+reconcile() {
+	local p l s b copy n
+	touch "$record"
+	listing "$dir" >"$work/local"
+	listing "$snap" >"$work/store"
+	: >"$work/record"
+	: >"$work/notices"
+	cut -d' ' -f2- "$work/local" "$work/store" "$record" | LC_ALL=C sort -u | while IFS= read -r p; do
+		l=$(lookup "$work/local" "$p")
+		s=$(lookup "$work/store" "$p")
+		b=$(lookup "$record" "$p")
+		got=
+		if [[ $l == "$s" ]]; then
+			got=$l
+		elif [[ $l == "$b" ]]; then
+			if [[ -z $s ]]; then
+				rm -f "$dir/$p"
+			else
+				take "$snap/$p" "$p" && got=$s || got=$b
+			fi
+		elif [[ $s == "$b" ]]; then
+			if [[ -z $l ]]; then
+				run "$CE_SYNC_RM" "" "" "$p" || got=$b
+			else
+				put "$dir/$p" "$p" && got=$l || got=$b
+			fi
+		elif [[ -z $l ]]; then
+			take "$snap/$p" "$p" && got=$s || got=$b
+			echo "kept $p: it was deleted here but edited elsewhere" >>"$work/notices"
+		elif [[ -z $s ]]; then
+			put "$dir/$p" "$p" && got=$l || got=$b
+			echo "kept $p: it was edited here but deleted elsewhere" >>"$work/notices"
+		else
+			copy=$(conflict_name "$p")
+			if cp "$dir/$p" "$dir/$copy" && put "$dir/$copy" "$copy" && take "$snap/$p" "$p"; then
+				got=$s
+				echo "$l $copy" >>"$work/record"
+				echo "$p changed here and elsewhere: merge $copy into it" >>"$work/notices"
+			else
+				got=$b
+			fi
+		fi
+		[[ -n $got ]] && echo "$got $p" >>"$work/record"
+	done
+	LC_ALL=C sort -k2 "$work/record" >"$record.tmp" && mv "$record.tmp" "$record"
+	while IFS= read -r n; do warn "$n"; done <"$work/notices"
+}
+
+sync() {
+	if [[ -z ${CE_SYNC_PUT:-} || -z ${CE_SYNC_RM:-} ]]; then
+		warn "$CONFIG needs CE_SYNC_PUT and CE_SYNC_RM; nothing synced"
+		return 1
+	fi
+	work=$(mktemp -d)
+	trap 'rm -rf "$work"' EXIT
+	download && reconcile
+}
+
+report() {
+	local n
+	for n in "${notices[@]+"${notices[@]}"}"; do echo "ce-sync: $n" >&2; done
 }
 
 hook_cwd() {
@@ -86,19 +194,23 @@ hook_cwd() {
 
 case ${1:-} in
 pull | push)
-	resolve "$PWD" || { warn "not a checkout ce-sync manages"; exit 1; }
+	resolve "$PWD" || { echo "ce-sync: not a checkout ce-sync manages" >&2; exit 1; }
 	init
-	"$1"
+	sync
+	report
 	;;
 hook-start)
 	resolve "$(hook_cwd)" || exit 0
 	init
-	pull
+	sync
+	report
 	exit 0
 	;;
 hook-stop)
 	resolve "$(hook_cwd)" || exit 0
-	[[ -d $dir ]] && push
+	[[ -d $dir ]] || exit 0
+	sync
+	report
 	exit 0
 	;;
 *)

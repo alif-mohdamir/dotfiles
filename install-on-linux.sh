@@ -115,5 +115,16 @@ if [[ ! -f $jj_user ]]; then
 	fi
 fi
 
+# Boxes keep their own ~/.claude/settings.json, so install the plugin into it rather than generating the file
+base="$DOTFILES/claude-settings/settings.base.json"
+if command -v claude >/dev/null && command -v jq >/dev/null; then
+	ce_source=$(jq -r '.extraKnownMarketplaces["compound-engineering-plugin"].source | "\(.repo)#\(.ref)"' "$base")
+	claude plugin marketplace add "$ce_source" &&
+		claude plugin install compound-engineering@compound-engineering-plugin ||
+		echo "warning: compound-engineering plugin not installed" >&2
+else
+	echo "warning: no claude or jq on PATH; compound-engineering plugin not installed" >&2
+fi
+
 # No jj-init-all here: dev boxes pull their own clones only on an attached branch, and jj detaches HEAD on its first new commit
 nvim --headless '+Lazy! restore' '+MasonToolsInstallSync' +qa

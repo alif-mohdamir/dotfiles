@@ -59,7 +59,9 @@ instead of extending it. Removing a key from the base file does not remove it fr
 machine file that sets it.
 
 The compound-engineering marketplace is pinned to a release tag in the base file. Bump
-`ref` there to upgrade, then re-add the marketplace with the new tag.
+`ref` there to upgrade, then re-add the marketplace with the new tag. Linux boxes keep their
+own `settings.json`, so `install-on-linux.sh` installs the plugin from that same `ref`
+instead.
 
 If `settings.json` was edited after it was generated, the generator stops and prints a diff
 instead of overwriting it. Move the changes you want to keep into one of the two source

@@ -64,10 +64,13 @@ own `settings.json`, so `install-on-linux.sh` installs the plugin from that same
 instead.
 
 `bin/scripts/ce-sync` keeps a checkout's compound-engineering artifacts in `.ce/`, hidden
-from git through `.git/info/exclude`, and syncs them with a private store from the
-SessionStart and Stop hooks. `install-on-linux.sh` adds those two hooks to a box's own
-`settings.json`. The store is set per machine in `~/.config/ce-sync/config`, as the
-script's header shows. Until that file exists, ce-sync does nothing.
+from git through `.git/info/exclude`, and syncs its learnings and plans with a private store
+from the SessionStart, Stop and SessionEnd hooks. Deletes reach every machine, and when two
+machines change the same file both versions are kept, with a message on screen naming the
+file to merge. `install-on-linux.sh` adds those hooks to a box's own `settings.json`, replacing
+any older ce-sync entries. The store commands are set per machine in
+`~/.config/ce-sync/config`, as the script's header shows. Until that file exists, ce-sync
+does nothing.
 
 If `settings.json` was edited after it was generated, the generator stops and prints a diff
 instead of overwriting it. Move the changes you want to keep into one of the two source

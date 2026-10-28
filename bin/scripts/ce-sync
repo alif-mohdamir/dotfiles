@@ -66,24 +66,28 @@ init() {
 	done
 }
 
-sum() { cksum <"$1" | awk '{ print $1 "-" $2 }'; }
+tracked() { git -C "$root" ls-files -z -- "$CE_DIR/solutions" "$CE_DIR/plans" | tr '\0' '\n' | sed "s|^$CE_DIR/||"; }
 
-# "<checksum> <path>" for each synced file under $1 that git does not track, sorted by path
+# $2 lists paths to leave out
 listing() {
-	local p
-	(cd "$1" && for d in $SYNCED; do [[ -d $d ]] && find "$d" -type f; done) | LC_ALL=C sort |
-		while IFS= read -r p; do
-			git -C "$root" ls-files --error-unmatch "$CE_DIR/$p" >/dev/null 2>&1 || echo "$(sum "$1/$p") $p"
-		done
+	local d dirs=()
+	for d in $SYNCED; do [[ -d $1/$d ]] && dirs+=("$d"); done
+	((${#dirs[@]})) || return 0
+	(cd "$1" && find "${dirs[@]}" -type f -exec cksum {} +) |
+		awk -v skip="${2:-/dev/null}" '
+			BEGIN { while ((getline t < skip) > 0) left_out[t] }
+			{ p = $0; sub(/^[^ ]+ [^ ]+ /, "", p); if (!(p in left_out)) print $1 "-" $2 " " p }' |
+		LC_ALL=C sort -k2
 }
 
 lookup() { awk -v p="$2" 'substr($0, index($0, " ") + 1) == p { print $1; exit }' "$1"; }
 
 run() {
-	local cmd=${1//%r/$(printf %q "$repo")}
-	cmd=${cmd//%d/$(printf %q "${2:-}")}
-	cmd=${cmd//%f/$(printf %q "${3:-}")}
-	cmd=${cmd//%p/$(printf %q "${4:-}")}
+	local cmd=$1 q
+	printf -v q %q "$repo" && cmd=${cmd//%r/$q}
+	printf -v q %q "${2:-}" && cmd=${cmd//%d/$q}
+	printf -v q %q "${3:-}" && cmd=${cmd//%f/$q}
+	printf -v q %q "${4:-}" && cmd=${cmd//%p/$q}
 	bash -c "$cmd" >/dev/null 2>&1
 }
 
@@ -98,18 +102,19 @@ conflict_name() {
 	fi
 }
 
-# Download the store into $snap. With no record yet, a missing marker may only mean a new folder, so put
-# the marker and download again before trusting the snapshot.
 download() {
 	snap=$work/snap
 	rm -rf "$snap" && mkdir -p "$snap"
-	run "$CE_SYNC_PULL" "$snap"
-	local rc=$?
-	[[ $rc == 0 && -f $snap/$MARKER ]] && return 0
+	run "$CE_SYNC_PULL" "$snap" && [[ -f $snap/$MARKER ]] && return 0
 	if [[ -s $record ]]; then
 		warn "the store's folder for $repo was unreachable; changed nothing"
 		return 1
 	fi
+	setup_new_folder
+}
+
+# With no record yet, a missing marker may only mean the repo's folder is new
+setup_new_folder() {
 	echo "ce-sync marker: keep this file" >"$work/marker"
 	put "$work/marker" "$MARKER" || { warn "could not reach the store for $repo"; return 1; }
 	rm -rf "$snap" && mkdir -p "$snap"
@@ -122,51 +127,50 @@ take() {
 	mkdir -p "$(dirname "$dir/$2")" && cp "$1" "$dir/$2"
 }
 
-# Decide each path from its local (l), store (s) and last-synced (b) checksums. A failed step keeps the
-# path's old record entry, so the next sync decides it again.
 reconcile() {
-	local p l s b copy n
+	local p local_sum store_sum base_sum new_base copy n
 	touch "$record"
-	listing "$dir" >"$work/local"
-	listing "$snap" >"$work/store"
+	tracked >"$work/tracked"
+	listing "$dir" "$work/tracked" >"$work/local"
+	listing "$snap" "$work/tracked" >"$work/store"
 	: >"$work/record"
 	: >"$work/notices"
 	cut -d' ' -f2- "$work/local" "$work/store" "$record" | LC_ALL=C sort -u | while IFS= read -r p; do
-		l=$(lookup "$work/local" "$p")
-		s=$(lookup "$work/store" "$p")
-		b=$(lookup "$record" "$p")
-		got=
-		if [[ $l == "$s" ]]; then
-			got=$l
-		elif [[ $l == "$b" ]]; then
-			if [[ -z $s ]]; then
+		local_sum=$(lookup "$work/local" "$p")
+		store_sum=$(lookup "$work/store" "$p")
+		base_sum=$(lookup "$record" "$p")
+		new_base=
+		if [[ $local_sum == "$store_sum" ]]; then
+			new_base=$local_sum
+		elif [[ $local_sum == "$base_sum" ]]; then
+			if [[ -z $store_sum ]]; then
 				rm -f "$dir/$p"
 			else
-				take "$snap/$p" "$p" && got=$s || got=$b
+				take "$snap/$p" "$p" && new_base=$store_sum || new_base=$base_sum
 			fi
-		elif [[ $s == "$b" ]]; then
-			if [[ -z $l ]]; then
-				run "$CE_SYNC_RM" "" "" "$p" || got=$b
+		elif [[ $store_sum == "$base_sum" ]]; then
+			if [[ -z $local_sum ]]; then
+				run "$CE_SYNC_RM" "" "" "$p" || new_base=$base_sum
 			else
-				put "$dir/$p" "$p" && got=$l || got=$b
+				put "$dir/$p" "$p" && new_base=$local_sum || new_base=$base_sum
 			fi
-		elif [[ -z $l ]]; then
-			take "$snap/$p" "$p" && got=$s || got=$b
+		elif [[ -z $local_sum ]]; then
+			take "$snap/$p" "$p" && new_base=$store_sum || new_base=$base_sum
 			echo "kept $p: it was deleted here but edited elsewhere" >>"$work/notices"
-		elif [[ -z $s ]]; then
-			put "$dir/$p" "$p" && got=$l || got=$b
+		elif [[ -z $store_sum ]]; then
+			put "$dir/$p" "$p" && new_base=$local_sum || new_base=$base_sum
 			echo "kept $p: it was edited here but deleted elsewhere" >>"$work/notices"
 		else
 			copy=$(conflict_name "$p")
 			if cp "$dir/$p" "$dir/$copy" && put "$dir/$copy" "$copy" && take "$snap/$p" "$p"; then
-				got=$s
-				echo "$l $copy" >>"$work/record"
+				new_base=$store_sum
+				echo "$local_sum $copy" >>"$work/record"
 				echo "$p changed here and elsewhere: merge $copy into it" >>"$work/notices"
 			else
-				got=$b
+				new_base=$base_sum
 			fi
 		fi
-		[[ -n $got ]] && echo "$got $p" >>"$work/record"
+		[[ -n $new_base ]] && echo "$new_base $p" >>"$work/record"
 	done
 	LC_ALL=C sort -k2 "$work/record" >"$record.tmp" && mv "$record.tmp" "$record"
 	while IFS= read -r n; do warn "$n"; done <"$work/notices"
@@ -237,7 +241,7 @@ hook-stop)
 	# hook-start already warned this session about an old config
 	[[ -n ${CE_SYNC_PUT:-} && -n ${CE_SYNC_RM:-} ]] || exit 0
 	# Stop fires after every reply, so a reply that changed nothing here makes no network call
-	[[ $(listing "$dir") == "$(cat "$record" 2>/dev/null)" ]] && exit 0
+	[[ $(listing "$dir" <(tracked)) == "$(cat "$record" 2>/dev/null)" ]] && exit 0
 	sync
 	report_hook
 	exit 0

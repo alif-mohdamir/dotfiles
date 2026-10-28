@@ -12,6 +12,10 @@ questions with me first. If that skill is not installed, run `grill-me` instead.
 when the request already fixes the outcome, such as a rebase, a branch cleanup or
 rerunning a check. End with the list of settled decisions, tagged as in Handoffs.
 
+When the repo has a `.ce/solutions/` directory, search it for learnings that bear on the task
+before planning, debugging or changing code there. `ce-sync` keeps it in step across my
+machines, and git never tracks it.
+
 ## Commits and pull requests
 
 - A commit message is a single subject line. No body, and no `Co-Authored-By` trailer,

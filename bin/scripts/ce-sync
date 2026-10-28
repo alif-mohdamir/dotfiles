@@ -1,0 +1,107 @@
+#!/bin/bash
+# ce-sync: keep a checkout's compound-engineering artifacts (.ce/) in a private store, out of the repo's history.
+#
+#   ce-sync pull         push anything unpushed, then pull, for the checkout around the current directory
+#   ce-sync push         push if .ce/ changed since the last sync
+#   ce-sync hook-start   pull, for a Claude SessionStart hook
+#   ce-sync hook-stop    push, for a Claude Stop hook
+#
+# The store is whatever two commands in ~/.config/ce-sync/config say, with %r for the repo name and
+# %d for the local .ce directory. Without that file every subcommand does nothing.
+#
+#   CE_SYNC_PULL='store-cli get learnings:%r/ %d -r'
+#   CE_SYNC_PUSH='store-cli put %d learnings:%r/ -r'
+set -uo pipefail
+
+CONFIG=${CE_SYNC_CONFIG:-~/.config/ce-sync/config}
+CE_DIR=.ce
+CE_CONFIG=.compound-engineering/config.yaml
+
+[[ -r $CONFIG ]] || exit 0
+# shellcheck source=/dev/null
+source "$CONFIG"
+[[ -n ${CE_SYNC_PULL:-} && -n ${CE_SYNC_PUSH:-} ]] || exit 0
+
+warn() { echo "ce-sync: $*" >&2; }
+
+resolve() {
+	root=$(git -C "$1" rev-parse --show-toplevel 2>/dev/null) || return 1
+	# A repo that commits its own CE config has chosen where its artifacts go
+	git -C "$root" ls-files --error-unmatch "$CE_CONFIG" >/dev/null 2>&1 && return 1
+	if [[ -f $root/$CE_CONFIG ]] && ! grep -qx "docs_root: $CE_DIR" "$root/$CE_CONFIG"; then
+		return 1
+	fi
+	local url
+	url=$(git -C "$root" remote get-url origin 2>/dev/null) || url=$root
+	repo=$(basename "${url%/}" .git)
+	dir=$root/$CE_DIR
+	# Per worktree, and outside .ce/ so it is never pushed
+	stamp=$(git -C "$root" rev-parse --absolute-git-dir)/ce-sync-stamp
+}
+
+init() {
+	mkdir -p "$dir" "$root/${CE_CONFIG%/*}"
+	[[ -f $root/$CE_CONFIG ]] || echo "docs_root: $CE_DIR" >"$root/$CE_CONFIG"
+	# The common dir's exclude covers every worktree of the clone
+	local exclude
+	exclude=$(git -C "$root" rev-parse --path-format=absolute --git-common-dir)/info/exclude
+	mkdir -p "${exclude%/*}"
+	touch "$exclude"
+	for p in "/$CE_DIR/" "/${CE_CONFIG%/*}/"; do
+		grep -qxF "$p" "$exclude" || echo "$p" >>"$exclude"
+	done
+}
+
+digest() {
+	(cd "$dir" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 cksum) | cksum
+}
+
+run() {
+	local cmd=${1//%r/$(printf %q "$repo")}
+	cmd=${cmd//%d/$(printf %q "$dir")}
+	bash -c "$cmd"
+}
+
+push() {
+	[[ -n $(find "$dir" -type f -print -quit) ]] || return 0
+	[[ -f $stamp && $(digest) == "$(cat "$stamp")" ]] && return 0
+	run "$CE_SYNC_PUSH" || { warn "push of $dir failed"; return 1; }
+	digest >"$stamp"
+}
+
+# A pull overwrites matching local files, so anything unpushed goes up first
+pull() {
+	push || return 1
+	# The store holds nothing for a repo until its first push, so a failed pull only warns
+	run "$CE_SYNC_PULL" >/dev/null || warn "pull into $dir failed or found nothing"
+	digest >"$stamp"
+}
+
+hook_cwd() {
+	local cwd
+	cwd=$(jq -r '.cwd // empty' 2>/dev/null)
+	echo "${cwd:-$PWD}"
+}
+
+case ${1:-} in
+pull | push)
+	resolve "$PWD" || { warn "not a checkout ce-sync manages"; exit 1; }
+	init
+	"$1"
+	;;
+hook-start)
+	resolve "$(hook_cwd)" || exit 0
+	init
+	pull
+	exit 0
+	;;
+hook-stop)
+	resolve "$(hook_cwd)" || exit 0
+	[[ -d $dir ]] && push
+	exit 0
+	;;
+*)
+	echo "usage: ce-sync pull|push|hook-start|hook-stop" >&2
+	exit 2
+	;;
+esac

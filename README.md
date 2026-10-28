@@ -63,6 +63,12 @@ The compound-engineering marketplace is pinned to a release tag in the base file
 own `settings.json`, so `install-on-linux.sh` installs the plugin from that same `ref`
 instead.
 
+`bin/scripts/ce-sync` keeps a checkout's compound-engineering artifacts in `.ce/`, hidden
+from git through `.git/info/exclude`, and syncs them with a private store from the
+SessionStart and Stop hooks. `install-on-linux.sh` adds those two hooks to a box's own
+`settings.json`. The store is set per machine in `~/.config/ce-sync/config`, as the
+script's header shows. Until that file exists, ce-sync does nothing.
+
 If `settings.json` was edited after it was generated, the generator stops and prints a diff
 instead of overwriting it. Move the changes you want to keep into one of the two source
 files, then run `claude-settings/generate.sh --force`. `peon-ping-setup` triggers this every

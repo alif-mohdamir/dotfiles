@@ -32,7 +32,6 @@ write_config() {
 	mkdir -p "$store"
 	cat >"$tmp/config" <<EOF
 CE_SYNC_PULL='echo pull >>$tmp/calls; [ -n "\$(find $store/%r -type f 2>/dev/null)" ] || exit 3; cp -R $store/%r/. %d/'
-CE_SYNC_PUSH='echo push >>$tmp/calls; mkdir -p $store/%r && cp -R %d/. $store/%r/'
 CE_SYNC_PUT='echo put >>$tmp/calls; mkdir -p "\$(dirname $store/%r/%p)" && cp %f $store/%r/%p'
 CE_SYNC_RM='echo rm >>$tmp/calls; rm -f $store/%r/%p'
 CE_SYNC_HOST=\${CE_SYNC_HOST:-testhost}
@@ -124,7 +123,6 @@ begin "hooks exit 0 when the store fails"
 new_repo "$tmp/case/a"
 cat >"$tmp/config" <<'EOF'
 CE_SYNC_PULL='exit 1'
-CE_SYNC_PUSH='exit 1'
 CE_SYNC_PUT='exit 1'
 CE_SYNC_RM='exit 1'
 EOF
@@ -368,6 +366,63 @@ stop=$(jq -c '[.hooks.Stop[].hooks[].command]' <<<"$merged")
 [[ $(jq -c '[.hooks.SessionStart[].hooks[].command]' <<<"$merged") == '["~/scripts/ce-sync hook-start"]' ]] ||
 	fail "SessionStart hooks: $(jq -c .hooks.SessionStart <<<"$merged")"
 [[ $(jq .other <<<"$merged") == 1 ]] || fail "lost other settings"
+
+begin "a store command that reads stdin does not swallow the file list"
+two_machines
+sed -i.bak "s|^CE_SYNC_PUT='|CE_SYNC_PUT='cat >/dev/null; |" "$tmp/config"
+for n in 1 2 3 4; do echo "$n" >"$local_a/solutions/f$n.md"; done
+on a
+for n in 1 2 3 4; do assert_content "$store/solutions/f$n.md" "$n"; done
+
+bash5=$(command -v /opt/homebrew/bin/bash /usr/bin/bash 2>/dev/null | while read -r b; do "$b" -c 'shopt -q patsub_replacement' 2>/dev/null && echo "$b" && break; done)
+if [[ -n $bash5 ]]; then
+	begin "a path with & stays quoted under bash 5.2 and later"
+	two_machines
+	echo amp >"$local_a/solutions/a&b.md"
+	(cd "$tmp/case/a" && CE_SYNC_CONFIG=$tmp/config "$bash5" "$script" pull 2>/dev/null)
+	assert_content "$store/solutions/a&b.md" amp
+fi
+
+begin "a second conflict on one file keeps the first conflict copy"
+two_machines
+echo v0 >"$local_a/plans/p.md"
+on a
+on b
+for round in 1 2; do
+	echo "a$round" >"$local_a/plans/p.md"
+	echo "b$round" >"$local_b/plans/p.md"
+	on a
+	on b
+done
+on a
+assert_content "$store/plans/p.conflict-b.md" b1
+assert_content "$store/plans/p.conflict-b-2.md" b2
+assert_content "$local_a/plans/p.conflict-b.md" b1
+[[ $(grep -c 'p.conflict-b.md$' "$tmp/case/b/.git/ce-sync-record") == 1 ]] || fail "record lists the first copy more than once"
+
+begin "a conflict copy keeps a dotted folder name intact"
+two_machines
+mkdir -p "$local_a/solutions/v1.2"
+echo v0 >"$local_a/solutions/v1.2/notes"
+on a
+on b
+echo from-a >"$local_a/solutions/v1.2/notes"
+echo from-b >"$local_b/solutions/v1.2/notes"
+on a
+on b
+assert_content "$store/solutions/v1.2/notes.conflict-b" from-b
+
+begin "the box merge keeps hooks without a command and lookalike commands"
+cat >"$tmp/case/settings.json" <<'EOF'
+{"hooks": {"Stop": [
+  {"matcher": "", "hooks": [{"type": "prompt", "prompt": "check"}]},
+  {"matcher": "", "hooks": [{"type": "command", "command": "/x/service-sync-notify"}]}
+]}}
+EOF
+merged=$(jq --slurpfile base "$base" -f "$filter" "$tmp/case/settings.json") || fail "merge failed"
+[[ $(jq -c '[.hooks.Stop[].hooks[] | .command // .type]' <<<"$merged") == '["~/scripts/ce-sync hook-stop","prompt","/x/service-sync-notify"]' ]] ||
+	fail "Stop hooks: $(jq -c .hooks.Stop <<<"$merged")"
+[[ $(jq --slurpfile base "$base" -f "$filter" <<<"$merged") == "$(jq . <<<"$merged")" ]] || fail "merge is not idempotent"
 
 if ((failures)); then
 	echo "$failures failure(s)"

@@ -84,22 +84,34 @@ lookup() { awk -v p="$2" 'substr($0, index($0, " ") + 1) == p { print $1; exit }
 
 run() {
 	local cmd=$1 q
-	printf -v q %q "$repo" && cmd=${cmd//%r/$q}
-	printf -v q %q "${2:-}" && cmd=${cmd//%d/$q}
-	printf -v q %q "${3:-}" && cmd=${cmd//%f/$q}
-	printf -v q %q "${4:-}" && cmd=${cmd//%p/$q}
-	bash -c "$cmd" >/dev/null 2>&1
+	# Quoted so bash 5.2's patsub_replacement leaves the escapes from %q alone
+	printf -v q %q "$repo" && cmd=${cmd//%r/"$q"}
+	printf -v q %q "${2:-}" && cmd=${cmd//%d/"$q"}
+	printf -v q %q "${3:-}" && cmd=${cmd//%f/"$q"}
+	printf -v q %q "${4:-}" && cmd=${cmd//%p/"$q"}
+	# Its stdin is reconcile's list of paths
+	bash -c "$cmd" </dev/null >/dev/null 2>&1
 }
 
 put() { run "$CE_SYNC_PUT" "" "$1" "$2"; }
 
+# A copy left from an earlier conflict that is not merged yet keeps its name
 conflict_name() {
-	local base=${1%.*} ext=${1##*.} host=${CE_SYNC_HOST:-$(hostname -s)}
-	if [[ $base == "$1" || $base == */ ]]; then
-		echo "$1.conflict-$host"
-	else
-		echo "$base.conflict-$host.$ext"
-	fi
+	local folder=${1%/*}/ name=${1##*/} host=${CE_SYNC_HOST:-$(uname -n)} n=1 tag candidate
+	[[ $1 == */* ]] || folder=
+	host=${host%%.*}
+	while :; do
+		tag=conflict-$host
+		((n > 1)) && tag+=-$n
+		if [[ $name == ?*.* ]]; then
+			candidate=$folder${name%.*}.$tag.${name##*.}
+		else
+			candidate=$folder$name.$tag
+		fi
+		[[ -e $dir/$candidate || -e $snap/$candidate ]] || break
+		n=$((n + 1))
+	done
+	echo "$candidate"
 }
 
 download() {

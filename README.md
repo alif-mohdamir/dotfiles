@@ -1,20 +1,62 @@
 # dotfiles
 
-Few dot files for tmux, wezterm, and lazyvim config. Scripts inspired by scripts from [ThePrimeagen](https://github.com/ThePrimeagen/.dotfiles/blob/master/bin/.local/scripts/tmux-sessionizer)
+Config for zsh, tmux, Neovim, jj, starship, alacritty and Claude Code, linked into `~` with
+[GNU Stow](https://www.gnu.org/software/stow/). Each top-level folder is a stow package that
+mirrors its layout under `~`. The tmux scripts are inspired by
+[ThePrimeagen's](https://github.com/ThePrimeagen/.dotfiles/blob/master/bin/.local/scripts/tmux-sessionizer).
 
-1. [tmux install instructions](https://github.com/tmux/tmux/wiki/Installing)
-2. [wezterm mac install instructions](https://wezfurlong.org/wezterm/install/macos.html)
-    - (don't forget the `.zshrc` step) if you want `wezterm-spawner` to work
-3. [lazyvim install](https://www.lazyvim.org/installation)
-4. [oh-my-zsh install](https://github.com/ohmyzsh/ohmyzsh/wiki/Installing-ZSH)
-5. [starship](https://starship.rs/#install-via-package-manager) install
+## Install
 
-You should be able to run `cfg.install.sh` to install most of the required dependencies with curl and brew
+On macOS:
 
-[Guide for using this repo as a bare repo](https://www.atlassian.com/git/tutorials/dotfiles)
-Saving old configs as a backup
+```bash
+git clone git@github.com:alif-mohdamir/dotfiles.git ~/projects/dotfiles
+cd ~/projects/dotfiles
+./install-with-brew.sh   # Homebrew, the CLI tools, oh-my-zsh and its plugins
+./install.sh             # stow the packages and write ~/.claude/settings.json
+peon-ping-setup          # sound packs and the hook script the Claude settings call
+nvim                     # first launch installs plugins and treesitter parsers
 ```
-mkdir -p .config-backup && \
-config checkout 2>&1 | egrep "\s+\." | awk '{print $1}' | \
-xargs -I{} sh -c "mkdir -p .config-backup/\$(dirname "{}") && mv "{}" .config-backup/{}"
+
+Then add your jj identity (see below) and open a new shell. `install.sh` is safe to rerun.
+The Neovim config needs Neovim 0.12 or newer.
+
+On Linux, run `./install.sh`. It hands off to `install-on-linux.sh`, which downloads the
+tools into `~/.local` and stows a smaller set of packages.
+
+## Machine-local files
+
+Anything specific to one machine goes in untracked files, since this repo is public:
+
+| File                                   | Used for                                     |
+| -------------------------------------- | -------------------------------------------- |
+| `~/.zsh_profile_local`                 | Sourced by `.zshrc`: env vars, work paths    |
+| `~/.config/jj/conf.d/user.toml`        | jj's `[user]` and `[signing]`                |
+| `~/.tmux.local.conf`                   | Sourced at the end of `.tmux.conf`           |
+| `~/.config/tmux-sessionizer/sources/`  | Executables that print extra sessionizer entries |
+| `~/.claude/settings.machine.json`      | Merged over the shared Claude settings       |
+
+An example `user.toml` that keeps your real email out of commits with GitHub's noreply
+address (find yours under GitHub's email settings):
+
+```toml
+[user]
+name = "Your Name"
+email = "12345678+username@users.noreply.github.com"
+
+[signing]
+behavior = "own"
+backend = "ssh"
+key = "ssh-ed25519 AAAA..."
 ```
+
+## Claude Code settings
+
+`~/.claude/settings.json` is generated, not stowed. `claude-settings/generate.sh` merges
+`claude-settings/settings.base.json` with `~/.claude/settings.machine.json`, if that file
+exists.
+
+If `settings.json` was edited after it was generated, the generator stops and prints a diff
+instead of overwriting it. Move the changes you want to keep into one of the two source
+files, then run `claude-settings/generate.sh --force`. `peon-ping-setup` triggers this every
+time by rewriting the hook paths from `~/` to full paths, and those edits are safe to discard.

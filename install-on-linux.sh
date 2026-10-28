@@ -126,7 +126,7 @@ else
 	echo "warning: no claude or jq on PATH; compound-engineering plugin not installed" >&2
 fi
 
-# Appends only the base file's ce-sync hooks, leaving the hooks the box installed in place
+# Adds only the base file's ce-sync hooks, ahead of the box's own, which its hook updater expects to stay last
 settings=~/.claude/settings.json
 if command -v jq >/dev/null; then
 	[[ -f $settings ]] || { mkdir -p ~/.claude && echo '{}' >"$settings"; }
@@ -135,7 +135,7 @@ if command -v jq >/dev/null; then
 			($e.value | map(.hooks |= map(select(.command | test("ce-sync"))) | select(.hooks != []))) as $ours
 			| reduce $ours[] as $group (.;
 				if [.hooks[$e.key][]?.hooks[]?.command] | index($group.hooks[0].command) then .
-				else .hooks[$e.key] += [$group] end))' "$settings") &&
+				else .hooks[$e.key] = [$group] + (.hooks[$e.key] // []) end))' "$settings") &&
 		printf '%s\n' "$merged" >"$settings"
 else
 	echo "warning: no jq; ce-sync hooks not added to $settings" >&2

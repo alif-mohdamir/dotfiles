@@ -1,5 +1,6 @@
 #!/bin/bash
-# PreToolUse(Bash): block git subcommands in a jj repo; exit 2 = block + feedback to Claude.
+# PreToolUse(Bash): block git subcommands that write in a jj repo; exit 2 = block + feedback to Claude.
+# Read-only ones and fetch stay allowed: skills that build diffs from git need them, and jj imports fetched refs.
 set -euo pipefail
 
 input=$(cat)
@@ -9,7 +10,7 @@ cwd=$(jq -r '.cwd // empty' <<<"$input")
 
 (cd "$cwd" && jj workspace root >/dev/null 2>&1) || exit 0
 
-blocked='(^|[;&|][[:space:]]*)git[[:space:]]+(commit|add|status|diff|log|push|pull|checkout|switch|branch|stash|rebase|merge|reset|restore|cherry-pick|tag|fetch|show|blame|describe)([[:space:]]|$)'
+blocked='(^|[;&|][[:space:]]*)git[[:space:]]+(commit|add|push|pull|checkout|switch|branch|stash|rebase|merge|reset|restore|cherry-pick|tag)([[:space:]]|$)'
 
 if [[ "$cmd" =~ $blocked ]]; then
   cat >&2 <<EOF

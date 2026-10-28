@@ -56,6 +56,11 @@
             "command": "~/.claude/hooks/peon-ping/peon.sh",
             "timeout": 10,
             "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/scripts/ce-sync hook-stop",
+            "timeout": 60
           }
         ]
       }
@@ -99,8 +104,7 @@
           {
             "type": "command",
             "command": "~/scripts/ce-sync hook-stop",
-            "timeout": 120,
-            "async": true
+            "timeout": 120
           }
         ]
       }

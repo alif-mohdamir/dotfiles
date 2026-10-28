@@ -293,6 +293,81 @@ echo x >"$local_a/solutions/x.md"
 on a
 assert_no_file "$tmp/case/store/proj"
 grep -q -i config "$tmp/stderr-a" || fail "no config warning: $(cat "$tmp/stderr-a")"
+[[ $(hook hook-start "$tmp/case/a") == *CE_SYNC_PUT* ]] || fail "hook-start did not warn"
+[[ -z $(hook hook-stop "$tmp/case/a") ]] || fail "hook-stop warned again"
+
+begin "a hook that cannot reach the store says so on screen"
+new_repo "$tmp/case/a"
+cat >"$tmp/config" <<'EOF'
+CE_SYNC_PULL='exit 4'
+CE_SYNC_PUT='exit 4'
+CE_SYNC_RM='exit 4'
+EOF
+out=$(hook hook-start "$tmp/case/a") || fail "hook-start exited $?"
+[[ $(jq -r .systemMessage <<<"$out" 2>/dev/null) == *"could not reach"* ]] || fail "expected one systemMessage line, got '$out'"
+[[ $(wc -l <<<"$out") -eq 1 ]] || fail "expected one line, got '$out'"
+
+begin "a conflict and an override in one sync make one message"
+two_machines
+echo v0 >"$local_a/plans/p.md"
+echo v0 >"$local_a/solutions/x.md"
+on a
+on b
+echo from-a >"$local_a/plans/p.md"
+rm "$local_a/solutions/x.md"
+on a
+echo from-b >"$local_b/plans/p.md"
+echo edited >"$local_b/solutions/x.md"
+out=$(CE_SYNC_HOST=b hook hook-start "$tmp/case/b")
+msg=$(jq -r .systemMessage <<<"$out" 2>/dev/null)
+[[ $msg == *p.md* && $msg == *x.md* && $(wc -l <<<"$out") -eq 1 ]] || fail "expected one message naming both files, got '$out'"
+
+begin "a clean sync prints nothing"
+two_machines
+echo a >"$local_a/solutions/a.md"
+out=$(hook hook-start "$tmp/case/a")
+[[ -z $out ]] || fail "printed '$out'"
+
+begin "a sync already running in the worktree makes a hook skip"
+two_machines
+echo a >"$local_a/solutions/a.md"
+mkdir "$tmp/case/a/.git/ce-sync.lock"
+hook hook-start "$tmp/case/a" >/dev/null || fail "hook-start exited $?"
+assert_no_file "$tmp/calls"
+touch -t 202001010000 "$tmp/case/a/.git/ce-sync.lock"
+hook hook-start "$tmp/case/a" >/dev/null
+assert_content "$store/solutions/a.md" a
+assert_no_file "$tmp/case/a/.git/ce-sync.lock"
+
+begin "hook-stop with nothing changed locally does not call the store"
+two_machines
+echo a >"$local_a/solutions/a.md"
+hook hook-start "$tmp/case/a" >/dev/null
+rm -f "$tmp/calls"
+hook hook-stop "$tmp/case/a" >/dev/null
+assert_no_file "$tmp/calls"
+echo b >"$local_a/solutions/a.md"
+hook hook-stop "$tmp/case/a" >/dev/null
+assert_content "$store/solutions/a.md" b
+
+begin "the box merge replaces old ce-sync hooks and keeps the box's own after them"
+filter=$(dirname "$script")/../../claude-settings/merge-ce-sync-hooks.jq
+base=$(dirname "$script")/../../claude-settings/settings.base.json
+cat >"$tmp/case/settings.json" <<'EOF'
+{"hooks": {"Stop": [
+  {"matcher": "", "hooks": [{"type": "command", "command": "~/scripts/ce-sync hook-stop", "timeout": 120, "async": true}]},
+  {"matcher": "", "hooks": [{"type": "command", "command": "box-status stop"}]}
+]}, "other": 1}
+EOF
+merged=$(jq --slurpfile base "$base" -f "$filter" "$tmp/case/settings.json") || fail "merge failed"
+stop=$(jq -c '[.hooks.Stop[].hooks[].command]' <<<"$merged")
+[[ $stop == '["~/scripts/ce-sync hook-stop","box-status stop"]' ]] || fail "Stop hooks: $stop"
+[[ $(jq '[.hooks.Stop[].hooks[] | select(.async)] | length' <<<"$merged") == 0 ]] || fail "Stop still async"
+[[ $(jq -c '[.hooks.SessionEnd[].hooks[].command]' <<<"$merged") == '["~/scripts/ce-sync hook-stop"]' ]] ||
+	fail "SessionEnd hooks: $(jq -c .hooks.SessionEnd <<<"$merged")"
+[[ $(jq -c '[.hooks.SessionStart[].hooks[].command]' <<<"$merged") == '["~/scripts/ce-sync hook-start"]' ]] ||
+	fail "SessionStart hooks: $(jq -c .hooks.SessionStart <<<"$merged")"
+[[ $(jq .other <<<"$merged") == 1 ]] || fail "lost other settings"
 
 if ((failures)); then
 	echo "$failures failure(s)"

@@ -50,6 +50,7 @@ resolve() {
 	# Per worktree, and outside .ce/ so it is never synced
 	gitdir=$(git -C "$root" rev-parse --absolute-git-dir)
 	record=$gitdir/ce-sync-record
+	lock=$gitdir/ce-sync.lock
 }
 
 init() {
@@ -171,19 +172,43 @@ reconcile() {
 	while IFS= read -r n; do warn "$n"; done <"$work/notices"
 }
 
+# mkdir is atomic on macOS and Linux, and macOS has no flock. Another session holding the lock is
+# syncing the same worktree, so skipping loses nothing; a lock older than 10 minutes was left by a crash.
+acquire() {
+	mkdir "$lock" 2>/dev/null && return 0
+	[[ -n $(find "$lock" -maxdepth 0 -mmin +10 2>/dev/null) ]] || return 1
+	rmdir "$lock" 2>/dev/null
+	mkdir "$lock" 2>/dev/null
+}
+
 sync() {
 	if [[ -z ${CE_SYNC_PUT:-} || -z ${CE_SYNC_RM:-} ]]; then
 		warn "$CONFIG needs CE_SYNC_PUT and CE_SYNC_RM; nothing synced"
 		return 1
 	fi
+	acquire || return 0
 	work=$(mktemp -d)
-	trap 'rm -rf "$work"' EXIT
+	trap 'rm -rf "$work"; rmdir "$lock" 2>/dev/null' EXIT
 	download && reconcile
 }
 
 report() {
 	local n
 	for n in "${notices[@]+"${notices[@]}"}"; do echo "ce-sync: $n" >&2; done
+}
+
+# A hook's JSON systemMessage is shown to the user and kept out of Claude's context
+report_hook() {
+	((${#notices[@]})) || return 0
+	local msg n
+	msg="ce-sync: ${notices[0]}"
+	for n in "${notices[@]:1}"; do msg+="; $n"; done
+	if command -v jq >/dev/null; then
+		jq -cn --arg m "$msg" '{systemMessage: $m}'
+	else
+		msg=${msg//\\/\\\\}
+		printf '{"systemMessage":"%s"}\n' "${msg//\"/\\\"}"
+	fi
 }
 
 hook_cwd() {
@@ -203,14 +228,18 @@ hook-start)
 	resolve "$(hook_cwd)" || exit 0
 	init
 	sync
-	report
+	report_hook
 	exit 0
 	;;
 hook-stop)
 	resolve "$(hook_cwd)" || exit 0
 	[[ -d $dir ]] || exit 0
+	# hook-start already warned this session about an old config
+	[[ -n ${CE_SYNC_PUT:-} && -n ${CE_SYNC_RM:-} ]] || exit 0
+	# Stop fires after every reply, so a reply that changed nothing here makes no network call
+	[[ $(listing "$dir") == "$(cat "$record" 2>/dev/null)" ]] && exit 0
 	sync
-	report
+	report_hook
 	exit 0
 	;;
 *)

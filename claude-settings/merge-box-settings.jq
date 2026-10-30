@@ -1,7 +1,6 @@
 # Merges the allowlisted part of settings.base.json (passed as $base) into a box's own settings.json.
 # $record holds what the previous run applied, or null on a first run. Emits {settings, record, kept}.
 
-# Every hook group in base is also applied (see the hooks step below).
 def allowlist: [
 	["statusLine"], ["outputStyle"], ["permissions", "defaultMode"], ["skipAutoPermissionPrompt"],
 	["skillOverrides"], ["effortLevel"], ["feedbackDrafts"], ["theme"], ["model"], ["extraKnownMarketplaces"],

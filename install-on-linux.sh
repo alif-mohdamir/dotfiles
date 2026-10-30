@@ -3,24 +3,24 @@ set -euo pipefail
 
 # Box images are built under another user's home, and their goenv and pyenv shims still exec that home's tools
 repair_stale_shims() {
-	local tool root shim stale
+	local tool root var shim stale
 	for tool in goenv pyenv; do
 		root=$HOME/.$tool
 		[[ -d $root/shims ]] || continue
 		stale=0
-		for shim in "$root"/shims/*; do
-			[[ -f $shim ]] || continue
+		while IFS= read -r shim; do
 			if grep -o '/home/[^/"[:space:]]*' "$shim" | grep -qvxF "$HOME"; then
 				stale=$((stale + 1))
 			fi
-		done
+		done < <(grep -rlF /home/ "$root/shims" || true)
 		((stale)) || continue
-		if [[ $tool == goenv ]]; then
-			GOENV_ROOT=$root "$root/bin/goenv" rehash || echo "warning: goenv rehash failed" >&2
+		var=GOENV_ROOT
+		[[ $tool == pyenv ]] && var=PYENV_ROOT
+		if env "$var=$root" "$root/bin/$tool" rehash; then
+			echo "repaired $stale stale $tool shims"
 		else
-			PYENV_ROOT=$root "$root/bin/pyenv" rehash || echo "warning: pyenv rehash failed" >&2
+			echo "warning: $tool rehash failed" >&2
 		fi
-		echo "repaired $stale stale $tool shims"
 	done
 }
 
@@ -44,9 +44,9 @@ fetch_peon_source() {
 		curl -fsSL "https://github.com/PeonPing/peon-ping/archive/refs/tags/v$PEON_VERSION.tar.gz" | tar -xz -C "$1" --strip-components=1
 }
 
-# $1 is a scratch directory for the download and the config backup
 install_peon_ping() {
-	local work=$1/peon-ping dir=$HOME/.claude/hooks/peon-ping status=0
+	local scratch=$1
+	local work=$scratch/peon-ping dir=$HOME/.claude/hooks/peon-ping status=0
 	[[ $(cat "$dir/VERSION" 2>/dev/null) == "$PEON_VERSION" ]] && return 0
 	fetch_peon_source "$work/src" || return 1
 	if [[ -f $dir/config.json ]]; then cp "$dir/config.json" "$work/config.json" || return 1; fi
@@ -59,8 +59,8 @@ install_peon_ping() {
 }
 
 fill_peon_title_script() {
-	local config=$HOME/.claude/hooks/peon-ping/config.json script new
-	script="bash $(printf %q "$1/claude-settings/peon-title.sh")"
+	local dotfiles=$1 config=$HOME/.claude/hooks/peon-ping/config.json script new
+	script="bash $(printf %q "$dotfiles/claude-settings/peon-title.sh")"
 	[[ -n $(jq -r '.notification_title_script // "" | gsub("\\s"; "")' "$config") ]] && return 0
 	new=$(mktemp "$config.XXXXXX") || return 1
 	if ! { jq --arg s "$script" '.notification_title_script = $s' "$config" >"$new" && mv "$new" "$config"; }; then
@@ -71,7 +71,7 @@ fill_peon_title_script() {
 
 # Other writers of settings.json follow a symlink there, so the merge writes through it to the target
 merge_box_settings() {
-	local link=$HOME/.claude/settings.json record=$HOME/.claude/.box-settings-applied.json previous settings out new_settings new_record
+	local dotfiles=$1 link=$HOME/.claude/settings.json record=$HOME/.claude/.box-settings-applied.json previous settings out new_settings='' new_record=''
 	mkdir -p "$HOME/.claude" || return 1
 	[[ -e $link ]] || echo '{}' >"$link" || return 1
 	settings=$(readlink -f "$link") || return 1
@@ -79,8 +79,8 @@ merge_box_settings() {
 	previous=/dev/null
 	jq -e 'type == "object"' "$record" >/dev/null 2>&1 && previous=$record
 	out=$(mktemp "$HOME/.claude/.box-settings-merge.XXXXXX") || return 1
-	if ! jq --slurpfile base "$1/claude-settings/settings.base.json" --slurpfile record "$previous" \
-		-f "$1/claude-settings/merge-box-settings.jq" "$settings" >"$out"; then
+	if ! jq --slurpfile base "$dotfiles/claude-settings/settings.base.json" --slurpfile record "$previous" \
+		-f "$dotfiles/claude-settings/merge-box-settings.jq" "$settings" >"$out"; then
 		rm -f "$out"
 		echo "warning: could not merge box settings; $settings and $record left as they were" >&2
 		return 0
@@ -98,7 +98,6 @@ merge_box_settings() {
 	rm -f "$out"
 }
 
-# The test sources this file for its functions alone
 if [[ -n ${INSTALL_ON_LINUX_FUNCTIONS_ONLY:-} ]]; then return 0; fi
 
 DOTFILES=${DOTFILES:-$(cd "$(dirname "$0")" && pwd)}
@@ -195,7 +194,9 @@ if command -v stow >/dev/null; then
 		mv ~/.tmux.conf ~/.tmux.conf.box-default
 	fi
 	export STOW_FOLDERS=${STOW_FOLDERS:-nvim,tmux,bin,jj,claude} DOTFILES
-	[[ ,$STOW_FOLDERS, == *,claude,* ]] && move_aside_stow_conflicts "$DOTFILES/claude"
+	if [[ ,$STOW_FOLDERS, == *,claude,* ]]; then
+		move_aside_stow_conflicts "$DOTFILES/claude" || echo "warning: could not move files that block the claude package" >&2
+	fi
 	"$DOTFILES/stow-dotfiles.sh"
 else
 	echo "warning: no stow; dotfiles not linked" >&2

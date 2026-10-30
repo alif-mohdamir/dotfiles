@@ -1,6 +1,4 @@
 #!/bin/bash
-# peon-ping's notification_title_script on a box: prints the box name, then the base name of $PEON_CWD.
-# The box name is CE_SYNC_HOST from the ce-sync config, else the hostname.
 
 host=
 config=$HOME/.config/ce-sync/config
@@ -11,4 +9,4 @@ if [[ -r $config ]]; then
 	done <"$config"
 fi
 [[ $host =~ ^\"(.*)\"$ || $host =~ ^\'(.*)\'$ ]] && host=${BASH_REMATCH[1]}
-printf '%s %s\n' "${host:-$(uname -n)}" "${PEON_CWD##*/}"
+printf '%s %s\n' "${host:-$HOSTNAME}" "${PEON_CWD##*/}"

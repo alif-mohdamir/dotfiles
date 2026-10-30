@@ -224,14 +224,21 @@ check "$s" '[.hooks.Stop[].hooks[].command]' '["~/.claude/hooks/peon-ping/peon.s
 check "$s" '[.. | .command? // empty | select(startswith("/home/"))]' '[]'
 check "$tmp/case/one.kept.json" '[.[] | select(test("peon-ping"))] | length' 0
 
-begin "a box peon group with an edited timeout is replaced by base's and named"
+begin "a box peon group with an edited timeout is replaced by base's"
 fixtures
 merge "$tmp/case/box.json" "$tmp/case/base.json" "$tmp/case/none.json" one
 jq '.hooks.UserPromptSubmit[0].hooks[0].timeout = 30' "$tmp/case/one.settings.json" >"$tmp/case/edited.json"
 merge "$tmp/case/edited.json" "$tmp/case/base.json" "$tmp/case/one.record.json" two
 s=$tmp/case/two.settings.json
 check "$s" '[.hooks.UserPromptSubmit[].hooks[] | .timeout]' '[10,null,null]'
-check "$tmp/case/two.kept.json" '[.[] | select(startswith("hooks.UserPromptSubmit") and test("30"))] | length' 1
+check "$tmp/case/two.kept.json" . '[]'
+
+begin "a hook added into a base peon group survives a rerun as a group of its own"
+fixtures
+merge "$tmp/case/box.json" "$tmp/case/base.json" "$tmp/case/none.json" one
+jq '.hooks.Stop[0].hooks += [{"type": "command", "command": "~/bin/my-stop-notify"}]' "$tmp/case/one.settings.json" >"$tmp/case/edited.json"
+merge "$tmp/case/edited.json" "$tmp/case/base.json" "$tmp/case/one.record.json" two
+check "$tmp/case/two.settings.json" '[.hooks.Stop[].hooks[].command]' '["~/.claude/hooks/peon-ping/peon.sh","~/scripts/ce-sync hook-stop","~/bin/my-stop-notify","/opt/box/bin/box-status stop"]'
 
 begin "a hook group edited on the box survives a rerun"
 fixtures
@@ -258,6 +265,26 @@ jq '.permissions.ask -= ["Bash(merge:*)"]' "$tmp/case/one.settings.json" >"$tmp/
 merge "$tmp/case/edited.json" "$tmp/case/base.json" "$tmp/case/one.record.json" two
 check "$tmp/case/two.settings.json" .permissions.ask '["Bash(push:*)"]'
 check "$tmp/case/two.kept.json" '[.[] | select(test("merge"))] | length' 1
+merge "$tmp/case/two.settings.json" "$tmp/case/base.json" "$tmp/case/two.record.json" three
+check "$tmp/case/three.settings.json" .permissions.ask '["Bash(push:*)"]'
+cmp -s "$tmp/case/two.settings.json" "$tmp/case/three.settings.json" || fail "the third run changed settings"
+
+begin "a base key deleted on the box stays deleted on later runs"
+fixtures
+merge "$tmp/case/box.json" "$tmp/case/base.json" "$tmp/case/none.json" one
+jq 'del(.model)' "$tmp/case/one.settings.json" >"$tmp/case/edited.json"
+merge "$tmp/case/edited.json" "$tmp/case/base.json" "$tmp/case/one.record.json" two
+merge "$tmp/case/two.settings.json" "$tmp/case/base.json" "$tmp/case/two.record.json" three
+check "$tmp/case/three.settings.json" 'has("model")' false
+check "$tmp/case/three.kept.json" . '["model"]'
+
+begin "extraKnownMarketplaces takes only the compound-engineering entry"
+fixtures
+with base2 '.extraKnownMarketplaces = {"compound-engineering-plugin": {"source": {"repo": "a/ce"}}, "other": {"source": {"repo": "b/other"}}}'
+jq '.extraKnownMarketplaces = {"compound-engineering-plugin": {"source": {"repo": "a/ce"}}}' "$tmp/case/box.json" >"$tmp/case/box2.json"
+merge "$tmp/case/box2.json" "$tmp/case/base2.json" "$tmp/case/none.json" one
+check "$tmp/case/one.settings.json" '.extraKnownMarketplaces | keys' '["compound-engineering-plugin"]'
+check "$tmp/case/one.kept.json" . '[]'
 
 begin "enabledPlugins takes only compound-engineering, and a box-enabled plugin stays"
 fixtures

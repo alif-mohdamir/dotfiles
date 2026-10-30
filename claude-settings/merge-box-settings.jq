@@ -3,7 +3,8 @@
 
 def allowlist: [
 	["statusLine"], ["outputStyle"], ["permissions", "defaultMode"], ["skipAutoPermissionPrompt"],
-	["skillOverrides"], ["effortLevel"], ["feedbackDrafts"], ["theme"], ["model"], ["extraKnownMarketplaces"],
+	["skillOverrides"], ["effortLevel"], ["feedbackDrafts"], ["theme"], ["model"],
+	["extraKnownMarketplaces", "compound-engineering-plugin"],
 	["enabledPlugins", "compound-engineering@compound-engineering-plugin"]
 ];
 # Owned one entry at a time, so a box-only entry never freezes base's entries.
@@ -33,7 +34,10 @@ $base[0] as $b
 	| if $box == $new or ($r == null and $box == null) or ($r != null and $box == $applied) then
 		if $new == null then .settings |= delpaths([$p])
 		else .settings |= setpath($p; $new.v) | .record.values += [{path: $p, value: $new.v}] end
-	else .kept += [$p | join(".")] end)
+	# A kept value stays in the record, so a box deletion is not undone by the run after next
+	else .kept += [$p | join(".")]
+		| if $applied != null and ($paths | has_entry($p)) then .record.values += [{path: $p, value: $applied.v}] else . end
+	end)
 
 | reduce ($lists + ([$r.lists[]?.path] - $lists))[] as $p (.;
 	(.settings | value_at($p)) as $present
@@ -46,7 +50,9 @@ $base[0] as $b
 		| if $on == $want or ($applied == null and ($on | not)) or ($applied != null and $on == ($applied | has_entry($e))) then
 			if $want then (if $on then . else .list += [$e] end) | .entries += [$e]
 			else .list -= [$e] end
-		else .kept += ["\($p | join(".")) \($e | tojson)"] end)) as $m
+		else .kept += ["\($p | join(".")) \($e | tojson)"]
+			| if ($lists | has_entry($p)) and (($applied // []) | has_entry($e)) then .entries += [$e] else . end
+		end)) as $m
 	| if $present != null or $m.list != [] then .settings |= setpath($p; $m.list) else . end
 	| if $m.entries != [] then .record.lists += [{path: $p, entries: $m.entries}] else . end
 	| .kept += $m.kept)
@@ -56,12 +62,9 @@ $base[0] as $b
 | reduce (.settings.hooks // {} | to_entries[]) as $ev (. + {own: {}};
 	reduce $ev.value[] as $g (.;
 		if any(($applied[$ev.key] // [])[], ($new[$ev.key] // [])[]; . == $g) then .
-		# peon's own installer writes absolute paths and base writes ~/, so only a ~/ group can be an edit worth naming
-		elif any(($g.hooks // [])[]; peon) then
-			if any(($g.hooks // [])[]; peon and (.command | startswith("~/"))) then .kept += ["hooks.\($ev.key) group removed: \($g | tojson)"] else . end
-		else ($g | .hooks = ((.hooks // []) | map(select(ce_sync | not)))) as $k
-			| if $k.hooks == [] then .kept += ["hooks.\($ev.key) group removed: \($g | tojson)"]
-			else .own[$ev.key] += [$k] end
+		# peon's installer rewrites and regroups its hooks on every install, so groups of only peon and ce-sync hooks go quietly
+		else ($g | .hooks = ((.hooks // []) | map(select((ce_sync or peon) | not)))) as $k
+			| if $k.hooks == [] then . else .own[$ev.key] += [$k] end
 		end))
 | .own as $own
 | (reduce ($new | to_entries[]) as $e ($own; .[$e.key] = $e.value + (.[$e.key] // []))

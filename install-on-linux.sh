@@ -47,7 +47,8 @@ fetch_peon_source() {
 install_peon_ping() {
 	local scratch=$1
 	local work=$scratch/peon-ping dir=$HOME/.claude/hooks/peon-ping status=0
-	[[ $(cat "$dir/VERSION" 2>/dev/null) == "$PEON_VERSION" ]] && return 0
+	# peon writes its VERSION early in its install, so only this marker proves a finished install
+	[[ $(cat "$dir/.dotfiles-installed" 2>/dev/null) == "$PEON_VERSION" ]] && return 0
 	fetch_peon_source "$work/src" || return 1
 	if [[ -f $dir/config.json ]]; then cp "$dir/config.json" "$work/config.json" || return 1; fi
 	# install.sh picks its platform from SSH variables, and on a box its linux branch exits for want of an audio player
@@ -55,6 +56,7 @@ install_peon_ping() {
 	if [[ -f $work/config.json ]] && ! cmp -s "$work/config.json" "$dir/config.json"; then
 		cp "$work/config.json" "$dir/config.json" || return 1
 	fi
+	((status)) || echo "$PEON_VERSION" >"$dir/.dotfiles-installed" || status=$?
 	return "$status"
 }
 
@@ -73,9 +75,13 @@ fill_peon_title_script() {
 merge_box_settings() {
 	local dotfiles=$1 link=$HOME/.claude/settings.json record=$HOME/.claude/.box-settings-applied.json previous settings out new_settings='' new_record=''
 	mkdir -p "$HOME/.claude" || return 1
-	[[ -e $link ]] || echo '{}' >"$link" || return 1
+	[[ -s $link ]] || echo '{}' >"$link" || return 1
 	settings=$(readlink -f "$link") || return 1
 	# An empty slurp gives the filter a null record, which it treats as a first run
+	if ! jq -e 'type == "object"' "$settings" >/dev/null 2>&1; then
+		echo "warning: could not merge box settings; $settings and $record left as they were" >&2
+		return 0
+	fi
 	previous=/dev/null
 	jq -e 'type == "object"' "$record" >/dev/null 2>&1 && previous=$record
 	out=$(mktemp "$HOME/.claude/.box-settings-merge.XXXXXX") || return 1

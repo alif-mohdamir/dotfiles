@@ -113,20 +113,20 @@ stow_claude
 [[ $(cat "$HOME/.claude/settings.json") == '{"box":true}' ]] || fail "settings.json changed"
 compgen -G "$HOME/.claude/settings.json.box-default*" >/dev/null && fail "settings.json moved aside"
 
-title() { PEON_CWD=/src/gonfalon bash "$dotfiles/claude-settings/peon-title.sh"; }
+title() { PEON_CWD=/src/myrepo bash "$dotfiles/claude-settings/peon-title.sh"; }
 
 begin "the title names the box from the ce-sync config, then the directory"
 mkdir -p "$HOME/.config/ce-sync"
-printf 'CE_SYNC_PULL=true\nCE_SYNC_HOST=waterloo\n' >"$HOME/.config/ce-sync/config"
-[[ $(title) == "waterloo gonfalon" ]] || fail "title was '$(title)'"
+printf 'CE_SYNC_PULL=true\nCE_SYNC_HOST=devbox\n' >"$HOME/.config/ce-sync/config"
+[[ $(title) == "devbox myrepo" ]] || fail "title was '$(title)'"
 
 begin "a quoted CE_SYNC_HOST loses its quotes"
 mkdir -p "$HOME/.config/ce-sync"
-echo 'CE_SYNC_HOST="waterloo"' >"$HOME/.config/ce-sync/config"
-[[ $(title) == "waterloo gonfalon" ]] || fail "title was '$(title)'"
+echo 'CE_SYNC_HOST="devbox"' >"$HOME/.config/ce-sync/config"
+[[ $(title) == "devbox myrepo" ]] || fail "title was '$(title)'"
 
 begin "without the ce-sync config the title names the hostname"
-[[ $(title) == "$(uname -n) gonfalon" ]] || fail "title was '$(title)'"
+[[ $(title) == "$(uname -n) myrepo" ]] || fail "title was '$(title)'"
 
 begin "the title script reads the ce-sync config without running it"
 mkdir -p "$HOME/.config/ce-sync"
@@ -139,6 +139,12 @@ title >/dev/null
 
 settings_file() { cat "$HOME/.claude/settings.json"; }
 record_file() { cat "$HOME/.claude/.box-settings-applied.json"; }
+
+begin "an empty settings.json is merged as an empty object"
+mkdir -p "$HOME/.claude"
+: >"$HOME/.claude/settings.json"
+merge_box_settings "$dotfiles" 2>/dev/null || fail "exited non-zero"
+[[ $(jq -r '.env.PEON_PLATFORM' "$HOME/.claude/settings.json") == ssh ]] || fail "settings were '$(cat "$HOME/.claude/settings.json")'"
 
 begin "a malformed settings.json is left byte-identical, with a warning"
 mkdir -p "$HOME/.claude"
@@ -190,7 +196,7 @@ EOF
 
 begin "peon at the pinned version is not reinstalled"
 mkdir -p "$(peon_dir)"
-echo 2.37.0 >"$(peon_dir)/VERSION"
+echo 2.37.0 >"$(peon_dir)/.dotfiles-installed"
 install_peon_ping "$tmp/case/work" || fail "exited non-zero"
 [[ -z $(calls) ]] || fail "calls were '$(calls)'"
 
@@ -199,6 +205,13 @@ unset SSH_CONNECTION SSH_CLIENT
 install_peon_ping "$tmp/case/work" || fail "exited non-zero"
 [[ $(calls) == "install --no-rc SSH_CONNECTION="?* ]] || fail "calls were '$(calls)'"
 [[ -f $(peon_dir)/peon.sh ]] || fail "peon.sh missing"
+
+begin "an install that failed after writing VERSION is retried"
+mkdir -p "$(peon_dir)"
+echo 2.37.0 >"$(peon_dir)/VERSION"
+install_peon_ping "$tmp/case/work" || fail "exited non-zero"
+[[ -n $(calls) ]] || fail "install.sh not run"
+[[ $(cat "$(peon_dir)/.dotfiles-installed") == 2.37.0 ]] || fail "finished install not marked"
 
 begin "an older peon's config survives the reinstall"
 mkdir -p "$(peon_dir)"

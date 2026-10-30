@@ -11,7 +11,8 @@ and Linux dev boxes.
   - `~/.config/jj/conf.d/user.toml`, for jj's `[user]` and `[signing]`
   - `~/.config/tmux-sessionizer/sources/`, for extra sessionizer entries
   - `~/.tmux.local.conf`, sourced at the end of `.tmux.conf`
-  - `~/.config/ce-sync/config`, for the store `bin/scripts/ce-sync` syncs with
+  - `~/.config/ce-sync/config`, for the store `bin/scripts/ce-sync` syncs with (its `CE_SYNC_HOST` also names a box in peon titles)
+  - `~/.claude/.box-settings-applied.json`, which `install-on-linux.sh` writes to track the Claude settings it applied on a box
 - A script must still work on a machine that lacks a tool it can use. Check with
   `command -v` and skip that step.
 - `install.sh` also runs on Linux, where it hands off to `install-on-linux.sh`. Before

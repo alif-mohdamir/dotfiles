@@ -22,7 +22,9 @@ Then add your jj identity (see below) and open a new shell. `install.sh` is safe
 The Neovim config needs Neovim 0.12 or newer.
 
 On Linux, run `./install.sh`. It hands off to `install-on-linux.sh`, which downloads the
-tools into `~/.local` and stows a smaller set of packages.
+tools into `~/.local`, stows a smaller set of packages, installs peon-ping and merges the
+shared Claude settings into the box's own (see below). A real file in the way of a stowed
+link is moved to `<name>.box-default` first.
 
 ## Machine-local files
 
@@ -35,6 +37,8 @@ Anything specific to one machine goes in untracked files, since this repo is pub
 | `~/.tmux.local.conf`                   | Sourced at the end of `.tmux.conf`           |
 | `~/.config/tmux-sessionizer/sources/`  | Executables that print extra sessionizer entries |
 | `~/.claude/settings.machine.json`      | Merged over the shared Claude settings       |
+| `~/.config/ce-sync/config`             | ce-sync's store; its `CE_SYNC_HOST` names the box in peon titles |
+| `~/.claude/.box-settings-applied.json` | Written by `install-on-linux.sh`: what it last applied |
 
 An example `user.toml` that keeps your real email out of commits with GitHub's noreply
 address (find yours under GitHub's email settings):
@@ -63,12 +67,25 @@ The compound-engineering marketplace is pinned to a release tag in the base file
 own `settings.json`, so `install-on-linux.sh` installs the plugin from that same `ref`
 instead.
 
+On a Linux box, `install-on-linux.sh` merges part of the base file into the box's own
+`settings.json` with `claude-settings/merge-box-settings.jq`. The allowlist at the top of
+that filter says which keys; `env`, `apiKeyHelper` and `tui` are never copied, and the only
+plugin enabled is compound-engineering. Base hook groups go ahead of the box's own, which
+stay last. The installer records what it applied in `~/.claude/.box-settings-applied.json`,
+so a rerun carries base changes and removals to the box. A value you changed on the box is
+kept, and the rerun names it in a warning. To pick up base changes on a box, pull and rerun
+the installer.
+
+The installer also installs peon-ping and sets `env.PEON_PLATFORM` to `ssh`, so sounds and
+notifications go to a relay on the laptop at `localhost:19998`. The laptop has to run
+`peon relay` and reverse-forward that port to the box over ssh. Notification titles start
+with `CE_SYNC_HOST` from the box's ce-sync config, or the hostname without one.
+
 `bin/scripts/ce-sync` keeps a checkout's compound-engineering artifacts in `.ce/`, hidden
 from git through `.git/info/exclude`, and syncs its learnings and plans with a private store
 from the SessionStart, Stop and SessionEnd hooks. Deletes reach every machine, and when two
 machines change the same file both versions are kept, with a message on screen naming the
-file to merge. `install-on-linux.sh` adds those hooks to a box's own `settings.json`, replacing
-any older ce-sync entries. The store commands are set per machine in
+file to merge. On a box, those hooks arrive with the rest of the base hooks. The store commands are set per machine in
 `~/.config/ce-sync/config`, as the script's header shows. Until that file exists, ce-sync
 does nothing.
 

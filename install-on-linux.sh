@@ -1,6 +1,45 @@
 #!/bin/bash
 set -euo pipefail
 
+# Box images are built under another user's home, and their goenv and pyenv shims still exec that home's tools
+repair_stale_shims() {
+	local tool root shim stale
+	for tool in goenv pyenv; do
+		root=$HOME/.$tool
+		[[ -d $root/shims ]] || continue
+		stale=0
+		for shim in "$root"/shims/*; do
+			[[ -f $shim ]] || continue
+			if grep -o '/home/[^/"[:space:]]*' "$shim" | grep -qvxF "$HOME"; then
+				stale=$((stale + 1))
+			fi
+		done
+		((stale)) || continue
+		if [[ $tool == goenv ]]; then
+			GOENV_ROOT=$root "$root/bin/goenv" rehash || echo "warning: goenv rehash failed" >&2
+		else
+			PYENV_ROOT=$root "$root/bin/pyenv" rehash || echo "warning: pyenv rehash failed" >&2
+		fi
+		echo "repaired $stale stale $tool shims"
+	done
+}
+
+# stow refuses to link over a real file, and then links nothing from the package
+move_aside_stow_conflicts() {
+	local package=$1 rel target backup
+	while IFS= read -r rel; do
+		target=$HOME/${rel#./}
+		[[ -f $target && ! -L $target ]] || continue
+		backup=$target.box-default
+		[[ -e $backup ]] && backup=$backup.$(date +%Y%m%d%H%M%S)
+		mv "$target" "$backup"
+		echo "warning: moved $target to $backup so stow can link it" >&2
+	done < <(cd "$package" && find . -type f)
+}
+
+# The test sources this file for its functions alone
+if [[ -n ${INSTALL_ON_LINUX_FUNCTIONS_ONLY:-} ]]; then return 0; fi
+
 DOTFILES=${DOTFILES:-$(cd "$(dirname "$0")" && pwd)}
 BIN=~/.local/bin
 OPT=~/.local/opt
@@ -19,7 +58,7 @@ x86_64)
 	;;
 esac
 
-packages=(git make gcc unzip curl tar gzip stow tmux ripgrep fzf)
+packages=(git make gcc unzip curl tar gzip stow tmux ripgrep fzf jq python3)
 if command -v apt-get >/dev/null; then
 	sudo apt-get update
 	sudo apt-get install -y "${packages[@]}"
@@ -67,6 +106,8 @@ download dandavison/delta "download/$delta_version/delta-$delta_version-$rust_ta
 tar -xzf "$tmp/delta-$delta_version-$rust_target.tar.gz" -C "$tmp"
 cp "$tmp/delta-$delta_version-$rust_target/delta" "$BIN/delta"
 
+repair_stale_shims
+
 # Some boxes keep go behind goenv, which non-interactive shells leave off PATH
 export PATH="$BIN:$HOME/.goenv/bin:$HOME/.goenv/shims:$HOME/go/bin:$PATH"
 if command -v go >/dev/null; then
@@ -92,7 +133,8 @@ if command -v stow >/dev/null; then
 	if [[ -f ~/.tmux.conf && ! -L ~/.tmux.conf && ! -e ~/.tmux.conf.box-default ]]; then
 		mv ~/.tmux.conf ~/.tmux.conf.box-default
 	fi
-	export STOW_FOLDERS=${STOW_FOLDERS:-nvim,tmux,bin,jj} DOTFILES
+	export STOW_FOLDERS=${STOW_FOLDERS:-nvim,tmux,bin,jj,claude} DOTFILES
+	[[ ,$STOW_FOLDERS, == *,claude,* ]] && move_aside_stow_conflicts "$DOTFILES/claude"
 	"$DOTFILES/stow-dotfiles.sh"
 else
 	echo "warning: no stow; dotfiles not linked" >&2

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Tests for install-on-linux.sh's shim repair and claude move-aside, run against a fake home.
+# Tests for install-on-linux.sh's functions and the peon title script, run against a fake home.
 #
 #   bash bin/scripts/install-on-linux.test.sh
 set -uo pipefail
@@ -112,6 +112,114 @@ stow_claude
 [[ -f $HOME/.claude/settings.json && ! -L $HOME/.claude/settings.json ]] || fail "settings.json replaced"
 [[ $(cat "$HOME/.claude/settings.json") == '{"box":true}' ]] || fail "settings.json changed"
 compgen -G "$HOME/.claude/settings.json.box-default*" >/dev/null && fail "settings.json moved aside"
+
+title() { PEON_CWD=/src/gonfalon bash "$dotfiles/claude-settings/peon-title.sh"; }
+
+begin "the title names the box from the ce-sync config, then the directory"
+mkdir -p "$HOME/.config/ce-sync"
+printf 'CE_SYNC_PULL=true\nCE_SYNC_HOST=waterloo\n' >"$HOME/.config/ce-sync/config"
+[[ $(title) == "waterloo gonfalon" ]] || fail "title was '$(title)'"
+
+begin "a quoted CE_SYNC_HOST loses its quotes"
+mkdir -p "$HOME/.config/ce-sync"
+echo 'CE_SYNC_HOST="waterloo"' >"$HOME/.config/ce-sync/config"
+[[ $(title) == "waterloo gonfalon" ]] || fail "title was '$(title)'"
+
+begin "without the ce-sync config the title names the hostname"
+[[ $(title) == "$(uname -n) gonfalon" ]] || fail "title was '$(title)'"
+
+begin "the title script reads the ce-sync config without running it"
+mkdir -p "$HOME/.config/ce-sync"
+cat >"$HOME/.config/ce-sync/config" <<EOF
+\$(touch "$tmp/case/ran-line")
+CE_SYNC_HOST=\$(touch "$tmp/case/ran-value")
+EOF
+title >/dev/null
+[[ -e $tmp/case/ran-line || -e $tmp/case/ran-value ]] && fail "the config was executed"
+
+settings_file() { cat "$HOME/.claude/settings.json"; }
+record_file() { cat "$HOME/.claude/.box-settings-applied.json"; }
+
+begin "a malformed settings.json is left byte-identical, with a warning"
+mkdir -p "$HOME/.claude"
+printf '{"box": tru' >"$HOME/.claude/settings.json"
+merge_box_settings "$dotfiles" 2>"$tmp/case/stderr" || fail "exited non-zero"
+[[ $(settings_file) == '{"box": tru' ]] || fail "settings.json changed: '$(settings_file)'"
+[[ $(ls -A "$HOME/.claude") == settings.json ]] || fail "other files left in ~/.claude: $(ls -A "$HOME/.claude")"
+grep -q "^warning: .*settings.json" "$tmp/case/stderr" || fail "no warning: '$(cat "$tmp/case/stderr")'"
+
+begin "a second merge leaves settings.json and the record byte-identical"
+mkdir -p "$HOME/.claude"
+echo '{"apiKeyHelper": "box-helper", "effortLevel": "box-choice"}' >"$HOME/.claude/settings.json"
+merge_box_settings "$dotfiles" 2>"$tmp/case/stderr" || fail "first merge exited non-zero"
+[[ $(jq -r .apiKeyHelper "$HOME/.claude/settings.json") == box-helper ]] || fail "box key lost"
+[[ $(jq -r .env.PEON_PLATFORM "$HOME/.claude/settings.json") == ssh ]] || fail "merge not applied"
+grep -qx "warning: kept box value: effortLevel" "$tmp/case/stderr" || fail "kept key not reported: '$(cat "$tmp/case/stderr")'"
+first_settings=$(settings_file) first_record=$(record_file)
+merge_box_settings "$dotfiles" 2>/dev/null || fail "second merge exited non-zero"
+[[ $(settings_file) == "$first_settings" ]] || fail "settings.json changed on the second run"
+[[ $(record_file) == "$first_record" ]] || fail "record changed on the second run"
+
+begin "a missing settings.json is created and merged"
+merge_box_settings "$dotfiles" 2>/dev/null || fail "exited non-zero"
+[[ $(jq -r .env.PEON_PLATFORM "$HOME/.claude/settings.json") == ssh ]] || fail "merge not applied: '$(settings_file)'"
+
+begin "a symlinked settings.json is written through to its target"
+mkdir -p "$HOME/.claude" "$tmp/case/elsewhere"
+echo '{}' >"$tmp/case/elsewhere/settings.json"
+ln -s "$tmp/case/elsewhere/settings.json" "$HOME/.claude/settings.json"
+merge_box_settings "$dotfiles" 2>/dev/null || fail "exited non-zero"
+[[ -L $HOME/.claude/settings.json ]] || fail "link replaced"
+[[ $(jq -r .env.PEON_PLATFORM "$tmp/case/elsewhere/settings.json") == ssh ]] || fail "target not merged"
+
+peon_dir() { echo "$HOME/.claude/hooks/peon-ping"; }
+
+# A peon source whose install.sh records its arguments and SSH_CONNECTION, then writes a fresh install
+fetch_peon_source() {
+	mkdir -p "$1"
+	cat >"$1/install.sh" <<'EOF'
+#!/bin/bash
+echo "install $* SSH_CONNECTION=${SSH_CONNECTION:-}" >>"$HOME/../calls"
+dir=$HOME/.claude/hooks/peon-ping
+mkdir -p "$dir"
+echo '{"notification_title_script": ""}' >"$dir/config.json"
+echo 2.37.0 >"$dir/VERSION"
+touch "$dir/peon.sh"
+EOF
+}
+
+begin "peon at the pinned version is not reinstalled"
+mkdir -p "$(peon_dir)"
+echo 2.37.0 >"$(peon_dir)/VERSION"
+install_peon_ping "$tmp/case/work" || fail "exited non-zero"
+[[ -z $(calls) ]] || fail "calls were '$(calls)'"
+
+begin "peon installs with no rc edits and an SSH platform when no SSH variables are set"
+unset SSH_CONNECTION SSH_CLIENT
+install_peon_ping "$tmp/case/work" || fail "exited non-zero"
+[[ $(calls) == "install --no-rc SSH_CONNECTION="?* ]] || fail "calls were '$(calls)'"
+[[ -f $(peon_dir)/peon.sh ]] || fail "peon.sh missing"
+
+begin "an older peon's config survives the reinstall"
+mkdir -p "$(peon_dir)"
+echo 2.30.0 >"$(peon_dir)/VERSION"
+echo '{"volume": 0.3, "notification_title_script": "mine"}' >"$(peon_dir)/config.json"
+install_peon_ping "$tmp/case/work" || fail "exited non-zero"
+[[ -n $(calls) ]] || fail "install.sh not run"
+[[ $(cat "$(peon_dir)/config.json") == '{"volume": 0.3, "notification_title_script": "mine"}' ]] || fail "config replaced: '$(cat "$(peon_dir)/config.json")'"
+
+begin "an empty notification_title_script is pointed at the title script"
+mkdir -p "$(peon_dir)"
+echo '{"volume": 0.3, "notification_title_script": ""}' >"$(peon_dir)/config.json"
+fill_peon_title_script "$dotfiles" || fail "exited non-zero"
+[[ $(jq -r .notification_title_script "$(peon_dir)/config.json") == "bash $dotfiles/claude-settings/peon-title.sh" ]] || fail "config was '$(cat "$(peon_dir)/config.json")'"
+[[ $(jq -r .volume "$(peon_dir)/config.json") == 0.3 ]] || fail "other keys lost"
+
+begin "a set notification_title_script is left as it was"
+mkdir -p "$(peon_dir)"
+echo '{"notification_title_script": "echo mine"}' >"$(peon_dir)/config.json"
+fill_peon_title_script "$dotfiles" || fail "exited non-zero"
+[[ $(cat "$(peon_dir)/config.json") == '{"notification_title_script": "echo mine"}' ]] || fail "config changed: '$(cat "$(peon_dir)/config.json")'"
 
 if ((failures)); then
 	echo "$failures failed"

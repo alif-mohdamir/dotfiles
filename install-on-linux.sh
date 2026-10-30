@@ -37,6 +37,67 @@ move_aside_stow_conflicts() {
 	done < <(cd "$package" && find . -type f)
 }
 
+PEON_VERSION=2.37.0
+
+fetch_peon_source() {
+	mkdir -p "$1" &&
+		curl -fsSL "https://github.com/PeonPing/peon-ping/archive/refs/tags/v$PEON_VERSION.tar.gz" | tar -xz -C "$1" --strip-components=1
+}
+
+# $1 is a scratch directory for the download and the config backup
+install_peon_ping() {
+	local work=$1/peon-ping dir=$HOME/.claude/hooks/peon-ping status=0
+	[[ $(cat "$dir/VERSION" 2>/dev/null) == "$PEON_VERSION" ]] && return 0
+	fetch_peon_source "$work/src" || return 1
+	if [[ -f $dir/config.json ]]; then cp "$dir/config.json" "$work/config.json" || return 1; fi
+	# install.sh picks its platform from SSH variables, and on a box its linux branch exits for want of an audio player
+	SSH_CONNECTION=${SSH_CONNECTION:-127.0.0.1 0 127.0.0.1 0} bash "$work/src/install.sh" --no-rc || status=$?
+	if [[ -f $work/config.json ]] && ! cmp -s "$work/config.json" "$dir/config.json"; then
+		cp "$work/config.json" "$dir/config.json" || return 1
+	fi
+	return "$status"
+}
+
+fill_peon_title_script() {
+	local config=$HOME/.claude/hooks/peon-ping/config.json script new
+	script="bash $(printf %q "$1/claude-settings/peon-title.sh")"
+	[[ -n $(jq -r '.notification_title_script // "" | gsub("\\s"; "")' "$config") ]] && return 0
+	new=$(mktemp "$config.XXXXXX") || return 1
+	if ! { jq --arg s "$script" '.notification_title_script = $s' "$config" >"$new" && mv "$new" "$config"; }; then
+		rm -f "$new"
+		return 1
+	fi
+}
+
+# Other writers of settings.json follow a symlink there, so the merge writes through it to the target
+merge_box_settings() {
+	local link=$HOME/.claude/settings.json record=$HOME/.claude/.box-settings-applied.json previous settings out new_settings new_record
+	mkdir -p "$HOME/.claude" || return 1
+	[[ -e $link ]] || echo '{}' >"$link" || return 1
+	settings=$(readlink -f "$link") || return 1
+	# An empty slurp gives the filter a null record, which it treats as a first run
+	previous=/dev/null
+	jq -e 'type == "object"' "$record" >/dev/null 2>&1 && previous=$record
+	out=$(mktemp "$HOME/.claude/.box-settings-merge.XXXXXX") || return 1
+	if ! jq --slurpfile base "$1/claude-settings/settings.base.json" --slurpfile record "$previous" \
+		-f "$1/claude-settings/merge-box-settings.jq" "$settings" >"$out"; then
+		rm -f "$out"
+		echo "warning: could not merge box settings; $settings and $record left as they were" >&2
+		return 0
+	fi
+	if ! { new_settings=$(mktemp "$(dirname "$settings")/.settings.json.XXXXXX") &&
+		new_record=$(mktemp "$record.XXXXXX") &&
+		jq .settings "$out" >"$new_settings" &&
+		jq .record "$out" >"$new_record" &&
+		mv "$new_settings" "$settings" &&
+		mv "$new_record" "$record"; }; then
+		rm -f "$out" "$new_settings" "$new_record"
+		return 1
+	fi
+	jq -r '.kept[] | "warning: kept box value: \(.)"' "$out" >&2
+	rm -f "$out"
+}
+
 # The test sources this file for its functions alone
 if [[ -n ${INSTALL_ON_LINUX_FUNCTIONS_ONLY:-} ]]; then return 0; fi
 
@@ -168,13 +229,13 @@ else
 	echo "warning: no claude or jq on PATH; compound-engineering plugin not installed" >&2
 fi
 
-settings=~/.claude/settings.json
+# Before the merge, which puts back the hook order the peon install changes
+install_peon_ping "$tmp" || echo "warning: peon-ping $PEON_VERSION not installed" >&2
 if command -v jq >/dev/null; then
-	[[ -f $settings ]] || { mkdir -p ~/.claude && echo '{}' >"$settings"; }
-	merged=$(jq --slurpfile base "$base" -f "$DOTFILES/claude-settings/merge-ce-sync-hooks.jq" "$settings") &&
-		printf '%s\n' "$merged" >"$settings"
+	fill_peon_title_script "$DOTFILES" || echo "warning: peon notification_title_script not set" >&2
+	merge_box_settings "$DOTFILES" || echo "warning: box settings merge failed" >&2
 else
-	echo "warning: no jq; ce-sync hooks not added to $settings" >&2
+	echo "warning: no jq; peon title and box settings not set up" >&2
 fi
 
 # No jj-init-all here: dev boxes pull their own clones only on an attached branch, and jj detaches HEAD on its first new commit

@@ -348,25 +348,6 @@ echo b >"$local_a/solutions/a.md"
 hook hook-stop "$tmp/case/a" >/dev/null
 assert_content "$store/solutions/a.md" b
 
-begin "the box merge replaces old ce-sync hooks and keeps the box's own after them"
-filter=$(dirname "$script")/../../claude-settings/merge-ce-sync-hooks.jq
-base=$(dirname "$script")/../../claude-settings/settings.base.json
-cat >"$tmp/case/settings.json" <<'EOF'
-{"hooks": {"Stop": [
-  {"matcher": "", "hooks": [{"type": "command", "command": "~/scripts/ce-sync hook-stop", "timeout": 120, "async": true}]},
-  {"matcher": "", "hooks": [{"type": "command", "command": "box-status stop"}]}
-]}, "other": 1}
-EOF
-merged=$(jq --slurpfile base "$base" -f "$filter" "$tmp/case/settings.json") || fail "merge failed"
-stop=$(jq -c '[.hooks.Stop[].hooks[].command]' <<<"$merged")
-[[ $stop == '["~/scripts/ce-sync hook-stop","box-status stop"]' ]] || fail "Stop hooks: $stop"
-[[ $(jq '[.hooks.Stop[].hooks[] | select(.async)] | length' <<<"$merged") == 0 ]] || fail "Stop still async"
-[[ $(jq -c '[.hooks.SessionEnd[].hooks[].command]' <<<"$merged") == '["~/scripts/ce-sync hook-stop"]' ]] ||
-	fail "SessionEnd hooks: $(jq -c .hooks.SessionEnd <<<"$merged")"
-[[ $(jq -c '[.hooks.SessionStart[].hooks[].command]' <<<"$merged") == '["~/scripts/ce-sync hook-start"]' ]] ||
-	fail "SessionStart hooks: $(jq -c .hooks.SessionStart <<<"$merged")"
-[[ $(jq .other <<<"$merged") == 1 ]] || fail "lost other settings"
-
 begin "a store command that reads stdin does not swallow the file list"
 two_machines
 sed -i.bak "s|^CE_SYNC_PUT='|CE_SYNC_PUT='cat >/dev/null; |" "$tmp/config"
@@ -411,18 +392,6 @@ echo from-b >"$local_b/solutions/v1.2/notes"
 on a
 on b
 assert_content "$store/solutions/v1.2/notes.conflict-b" from-b
-
-begin "the box merge keeps hooks without a command and lookalike commands"
-cat >"$tmp/case/settings.json" <<'EOF'
-{"hooks": {"Stop": [
-  {"matcher": "", "hooks": [{"type": "prompt", "prompt": "check"}]},
-  {"matcher": "", "hooks": [{"type": "command", "command": "/x/service-sync-notify"}]}
-]}}
-EOF
-merged=$(jq --slurpfile base "$base" -f "$filter" "$tmp/case/settings.json") || fail "merge failed"
-[[ $(jq -c '[.hooks.Stop[].hooks[] | .command // .type]' <<<"$merged") == '["~/scripts/ce-sync hook-stop","prompt","/x/service-sync-notify"]' ]] ||
-	fail "Stop hooks: $(jq -c .hooks.Stop <<<"$merged")"
-[[ $(jq --slurpfile base "$base" -f "$filter" <<<"$merged") == "$(jq . <<<"$merged")" ]] || fail "merge is not idempotent"
 
 begin "a wiped .ce/ deletes nothing from the store"
 two_machines

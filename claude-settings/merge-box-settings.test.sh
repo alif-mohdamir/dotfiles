@@ -347,6 +347,21 @@ check "$s" '[.hooks[][] | select(any(.hooks[]; .command | test("ce-sync")))] | l
 merge "$s" "$here/settings.base.json" "$tmp/case/one.record.json" two
 cmp -s "$s" "$tmp/case/two.settings.json" || fail "a rerun changed settings"
 
+begin "a box merged with the old base's push prompts drops them for the publish gate"
+fixtures
+jq '.permissions.ask = ["Bash(jj git push:*)", "Bash(git push:*)", "Bash(gh pr create:*)", "Bash(gh pr edit:*)", "Bash(gh pr merge:*)"]
+	| .hooks.PreToolUse[0].hooks |= map(select(.command | contains("publish-gate") | not))' \
+	"$here/settings.base.json" >"$tmp/case/old-base.json"
+jq '.permissions.ask = ["Bash(box-only:*)"]' "$tmp/case/box.json" >"$tmp/case/box2.json"
+merge "$tmp/case/box2.json" "$tmp/case/old-base.json" "$tmp/case/none.json" one
+check "$tmp/case/one.settings.json" '.permissions.ask | length' 6
+merge "$tmp/case/one.settings.json" "$here/settings.base.json" "$tmp/case/one.record.json" two
+s=$tmp/case/two.settings.json
+check "$s" .permissions.ask '["Bash(box-only:*)"]'
+check "$s" '[.hooks.PreToolUse[].hooks[].command | select(contains("publish-gate"))]' '["~/.claude/hooks/publish-gate.sh"]'
+check "$tmp/case/two.record.json" .lists '[]'
+check "$tmp/case/two.kept.json" . '[]'
+
 if ((failures)); then
 	echo "$failures failure(s)"
 	exit 1

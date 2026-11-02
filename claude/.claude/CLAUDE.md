@@ -23,6 +23,8 @@ machines, and git never tracks it.
 - Ask before running `git push`, `jj git push`, or `gh pr create`/`edit`/`merge`. A
   request that describes the end state ("this will be a new PR") does not approve
   pushing now. Stage the work locally, say it is ready, and wait.
+- An unattended run, with nobody at the prompt, may push its own branch and open a draft
+  PR when the session that started it asked for that. Merging still needs me.
 - A change that answers a reviewer's comment goes in a new commit on top of the pushed
   stack, even if a handoff says to squash it. Reviewers then see exactly what changed in
   reply. Other follow-ups (rebase fixes, approved plan changes) can still be squashed.

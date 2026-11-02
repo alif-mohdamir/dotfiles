@@ -81,6 +81,13 @@ notifications go to a relay on the laptop at `localhost:19998`. The laptop has t
 `peon relay` and reverse-forward that port to the box over ssh. Notification titles start
 with `CE_SYNC_HOST` from the box's ce-sync config, or the hostname without one.
 
+Pushes and PR commands go through `claude/.claude/hooks/publish-gate.sh` instead of
+`permissions.ask` rules, because an `ask` rule also stops a headless run that has nobody to
+answer it. Interactive sessions get a prompt for each one. A run that Claude Code marks as
+unattended may push branches that have no PR or the user's own PR, open draft PRs and edit
+the user's PRs, and is denied the rest. The hook's header has the details, and
+`claude-settings/publish-gate.test.sh` tests it.
+
 `bin/scripts/ce-sync` keeps a checkout's compound-engineering artifacts in `.ce/`, hidden
 from git through `.git/info/exclude`, and syncs its learnings and plans with a private store
 from the SessionStart, Stop and SessionEnd hooks. Deletes reach every machine, and when two

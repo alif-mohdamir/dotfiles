@@ -1,12 +1,5 @@
 {
   "permissions": {
-    "ask": [
-      "Bash(jj git push:*)",
-      "Bash(git push:*)",
-      "Bash(gh pr create:*)",
-      "Bash(gh pr edit:*)",
-      "Bash(gh pr merge:*)"
-    ],
     "defaultMode": "auto"
   },
   "model": "opus",
@@ -130,6 +123,11 @@
             "type": "command",
             "command": "~/.claude/hooks/prefer-jj.sh",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/publish-gate.sh",
+            "timeout": 30
           },
           {
             "type": "command",

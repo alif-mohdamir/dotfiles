@@ -26,7 +26,8 @@ fi
 
 if [[ $selected == *$'\t'* ]]; then
 	selected_name=$(cut -f1 <<<"$selected" | tr ./: ___)
-	new_session_args=("$(cut -f2- <<<"$selected")")
+	# Wait on failure, or the session closes with the command and takes its error with it
+	new_session_args=("$(cut -f2- <<<"$selected") || { echo \"[exited \$?, press Enter to close]\"; read -r; }")
 else
 	selected_name=$(basename "$selected" | tr . _)
 	new_session_args=(-c "$selected")

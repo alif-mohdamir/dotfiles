@@ -125,8 +125,8 @@ mkdir -p "$HOME/.config/ce-sync"
 echo 'CE_SYNC_HOST="devbox"' >"$HOME/.config/ce-sync/config"
 [[ $(title) == "devbox myrepo" ]] || fail "title was '$(title)'"
 
-begin "without the ce-sync config the title names the hostname"
-[[ $(title) == "$(uname -n) myrepo" ]] || fail "title was '$(title)'"
+begin "without the ce-sync config the title is the directory alone"
+[[ $(title) == "myrepo" ]] || fail "title was '$(title)'"
 
 begin "the title script reads the ce-sync config without running it"
 mkdir -p "$HOME/.config/ce-sync"

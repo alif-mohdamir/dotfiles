@@ -9,4 +9,5 @@ if [[ -r $config ]]; then
 	done <"$config"
 fi
 [[ $host =~ ^\"(.*)\"$ || $host =~ ^\'(.*)\'$ ]] && host=${BASH_REMATCH[1]}
-printf '%s %s\n' "${host:-$HOSTNAME}" "${PEON_CWD##*/}"
+# No hostname fallback: a cloud box's is its private IP, which names nothing
+printf '%s\n' "${host:+$host }${PEON_CWD##*/}"

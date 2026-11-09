@@ -25,9 +25,11 @@ machines, and git never tracks it.
   pushing now. Stage the work locally, say it is ready, and wait.
 - An unattended run, with nobody at the prompt, may push its own branch and open a draft
   PR when the session that started it asked for that. Merging still needs me.
-- A change that answers a reviewer's comment goes in a new commit on top of the pushed
-  stack, even if a handoff says to squash it. Reviewers then see exactly what changed in
-  reply. Other follow-ups (rebase fixes, approved plan changes) can still be squashed.
+- While a PR is a draft, history can be rewritten: fold follow-ups into the commit they
+  belong to and force-push with lease. Once I mark it ready, a change that answers a
+  reviewer's comment goes in a new commit on top of the pushed stack, even if a handoff
+  says to squash it. Reviewers then see exactly what changed in reply. Other follow-ups
+  (rebase fixes, approved plan changes) can still be squashed.
 - Before posting to a PR thread, fetch its replies. If I have already answered, leave it
   alone. Otherwise hand me the draft instead of posting, with two exceptions:
   - When I ask for a review, post it as a pending review (no `event` field), and disclose

@@ -79,7 +79,9 @@ the installer.
 The installer also installs peon-ping and sets `env.PEON_PLATFORM` to `ssh`, so sounds and
 notifications go to a relay on the laptop at `localhost:19998`. The laptop has to run
 `peon relay` and reverse-forward that port to the box over ssh. Notification titles start
-with `CE_SYNC_HOST` from the box's ce-sync config, when it has one.
+with `CE_SYNC_HOST` from the box's ce-sync config, when it has one. The box's peon config
+decides what reaches the relay, and on its first run the installer leaves only finished
+work and input requests on there (`peon` can turn others back on).
 
 Pushes and PR commands go through `claude/.claude/hooks/publish-gate.sh` instead of
 `permissions.ask` rules, because an `ask` rule also stops a headless run that has nobody to

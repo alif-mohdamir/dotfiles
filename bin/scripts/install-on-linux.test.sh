@@ -234,6 +234,22 @@ echo '{"notification_title_script": "echo mine"}' >"$(peon_dir)/config.json"
 fill_peon_title_script "$dotfiles" || fail "exited non-zero"
 [[ $(cat "$(peon_dir)/config.json") == '{"notification_title_script": "echo mine"}' ]] || fail "config changed: '$(cat "$(peon_dir)/config.json")'"
 
+begin "peon's defaults are quieted to finished work and input requests, keeping other keys"
+mkdir -p "$(peon_dir)"
+echo '{"volume": 0.3, "categories": {"task.complete": true, "input.required": true, "task.error": true, "resource.limit": true}}' >"$(peon_dir)/config.json"
+quiet_peon_defaults || fail "exited non-zero"
+on=$(jq -c '[.categories | to_entries[] | select(.value) | .key] | sort' "$(peon_dir)/config.json")
+[[ $on == '["input.required","task.complete"]' ]] || fail "categories on were $on"
+[[ $(jq .suppress_subagent_complete "$(peon_dir)/config.json") == true ]] || fail "subagent completions not suppressed"
+[[ $(jq .volume "$(peon_dir)/config.json") == 0.3 ]] || fail "other keys lost"
+
+begin "a box already quieted keeps the categories it has"
+mkdir -p "$(peon_dir)"
+touch "$(peon_dir)/.dotfiles-quieted"
+echo '{"categories": {"task.error": true}}' >"$(peon_dir)/config.json"
+quiet_peon_defaults || fail "exited non-zero"
+[[ $(cat "$(peon_dir)/config.json") == '{"categories": {"task.error": true}}' ]] || fail "config changed: '$(cat "$(peon_dir)/config.json")'"
+
 if ((failures)); then
 	echo "$failures failed"
 	exit 1

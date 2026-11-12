@@ -71,6 +71,20 @@ fill_peon_title_script() {
 	fi
 }
 
+# Once per box, so a category turned back on with peon survives reruns
+quiet_peon_defaults() {
+	local dir=$HOME/.claude/hooks/peon-ping config new
+	config=$dir/config.json
+	[[ -e $dir/.dotfiles-quieted ]] && return 0
+	new=$(mktemp "$config.XXXXXX") || return 1
+	if ! { jq '.categories += {"session.start": false, "task.error": false, "resource.limit": false, "user.spam": false}
+		| .suppress_subagent_complete = true' "$config" >"$new" && mv "$new" "$config"; }; then
+		rm -f "$new"
+		return 1
+	fi
+	touch "$dir/.dotfiles-quieted"
+}
+
 # Other writers of settings.json follow a symlink there, so the merge writes through it to the target
 merge_box_settings() {
 	local dotfiles=$1 link=$HOME/.claude/settings.json record=$HOME/.claude/.box-settings-applied.json previous settings out new_settings='' new_record=''
@@ -240,6 +254,7 @@ fi
 install_peon_ping "$tmp" || echo "warning: peon-ping $PEON_VERSION not installed" >&2
 if command -v jq >/dev/null; then
 	fill_peon_title_script "$DOTFILES" || echo "warning: peon notification_title_script not set" >&2
+	quiet_peon_defaults || echo "warning: peon categories left at peon's defaults" >&2
 	merge_box_settings "$DOTFILES" || echo "warning: box settings merge failed" >&2
 else
 	echo "warning: no jq; peon title and box settings not set up" >&2

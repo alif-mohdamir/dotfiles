@@ -98,6 +98,12 @@ file to merge. On a box, those hooks arrive with the rest of the base hooks. The
 `~/.config/ce-sync/config`, as the script's header shows. Until that file exists, ce-sync
 does nothing.
 
+A pulled change to the base file does nothing until the generator runs again, so
+`claude/.claude/hooks/settings-stale.sh` checks at the start of every session and shows a
+warning when the installer is due: the sources changed since the last run, or a hook they
+register is not linked into `~/.claude/hooks`. It only warns. On a Linux box it asks the
+same of the merge. `generate.sh --check` prints the reason without writing anything.
+
 If `settings.json` was edited after it was generated, the generator stops and prints a diff
 instead of overwriting it. Move the changes you want to keep into one of the two source
 files, then run `claude-settings/generate.sh --force`. `peon-ping-setup` triggers this every

@@ -180,11 +180,31 @@ merge_box_settings "$dotfiles" 2>/dev/null || fail "exited non-zero"
 
 begin "hooks the base registers are listed until they are linked"
 mkdir -p "$HOME/.claude/hooks"
-[[ $(unlinked_claude_hooks "$dotfiles" | tr '\n' ' ') == "prefer-jj.sh publish-gate.sh " ]] || fail "listed '$(unlinked_claude_hooks "$dotfiles" | tr '\n' ' ')'"
+[[ $(unlinked_claude_hooks "$dotfiles" | tr '\n' ' ') == "prefer-jj.sh publish-gate.sh settings-stale.sh " ]] || fail "listed '$(unlinked_claude_hooks "$dotfiles" | tr '\n' ' ')'"
 ln -s "$dotfiles/claude/.claude/hooks/prefer-jj.sh" "$HOME/.claude/hooks/prefer-jj.sh"
-[[ $(unlinked_claude_hooks "$dotfiles") == publish-gate.sh ]] || fail "listed '$(unlinked_claude_hooks "$dotfiles")' with prefer-jj.sh linked"
+ln -s "$dotfiles/claude/.claude/hooks/settings-stale.sh" "$HOME/.claude/hooks/settings-stale.sh"
+[[ $(unlinked_claude_hooks "$dotfiles") == publish-gate.sh ]] || fail "listed '$(unlinked_claude_hooks "$dotfiles")' with two linked"
 ln -s "$dotfiles/claude/.claude/hooks/publish-gate.sh" "$HOME/.claude/hooks/publish-gate.sh"
-[[ -z $(unlinked_claude_hooks "$dotfiles") ]] || fail "listed '$(unlinked_claude_hooks "$dotfiles")' with both linked"
+[[ -z $(unlinked_claude_hooks "$dotfiles") ]] || fail "listed '$(unlinked_claude_hooks "$dotfiles")' with all linked"
+
+# A copy of the repo's settings sources whose base can be changed without touching the real one
+fake_dotfiles() {
+	mkdir -p "$tmp/case/df/claude-settings"
+	cp "$dotfiles/claude-settings/settings.base.json" "$dotfiles/claude-settings/merge-box-settings.jq" "$tmp/case/df/claude-settings/"
+}
+
+begin "box settings are stale until merged, and again once the base changes"
+fake_dotfiles
+box_settings_stale "$tmp/case/df" || fail "not stale with no settings.json"
+mkdir -p "$HOME/.claude"
+echo '{"effortLevel": "box-choice"}' >"$HOME/.claude/settings.json"
+box_settings_stale "$tmp/case/df" || fail "not stale before the first merge"
+merge_box_settings "$tmp/case/df" 2>/dev/null || fail "merge exited non-zero"
+box_settings_stale "$tmp/case/df" && fail "stale right after a merge"
+jq '.model = "box-model"' "$HOME/.claude/settings.json" >"$tmp/case/edited" && cp "$tmp/case/edited" "$HOME/.claude/settings.json"
+box_settings_stale "$tmp/case/df" && fail "stale after the box changed its own value"
+jq '.theme = "changed-in-base"' "$tmp/case/df/claude-settings/settings.base.json" >"$tmp/case/base" && cp "$tmp/case/base" "$tmp/case/df/claude-settings/settings.base.json"
+box_settings_stale "$tmp/case/df" || fail "not stale after the base changed"
 
 peon_dir() { echo "$HOME/.claude/hooks/peon-ping"; }
 

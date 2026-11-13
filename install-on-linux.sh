@@ -130,6 +130,17 @@ unlinked_claude_hooks() {
 		done
 }
 
+# Succeeds when merge_box_settings would change the box's settings or its record
+box_settings_stale() {
+	local dotfiles=$1 link=$HOME/.claude/settings.json record=$HOME/.claude/.box-settings-applied.json previous=/dev/null out
+	[[ -s $link ]] || return 0
+	jq -e 'type == "object"' "$link" >/dev/null 2>&1 || return 1
+	jq -e 'type == "object"' "$record" >/dev/null 2>&1 && previous=$record
+	out=$(jq --slurpfile base "$dotfiles/claude-settings/settings.base.json" --slurpfile record "$previous" \
+		-f "$dotfiles/claude-settings/merge-box-settings.jq" "$link") || return 1
+	[[ $(jq -S .settings <<<"$out") != "$(jq -S . "$link")" || $(jq -S .record <<<"$out") != "$(jq -S . "$record" 2>/dev/null)" ]]
+}
+
 if [[ -n ${INSTALL_ON_LINUX_FUNCTIONS_ONLY:-} ]]; then return 0; fi
 
 DOTFILES=${DOTFILES:-$(cd "$(dirname "$0")" && pwd)}

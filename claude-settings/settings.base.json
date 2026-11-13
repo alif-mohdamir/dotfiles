@@ -36,6 +36,11 @@
             "type": "command",
             "command": "~/scripts/ce-sync hook-start",
             "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/settings-stale.sh",
+            "timeout": 10
           }
         ]
       }

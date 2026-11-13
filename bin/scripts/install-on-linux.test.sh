@@ -178,6 +178,14 @@ merge_box_settings "$dotfiles" 2>/dev/null || fail "exited non-zero"
 [[ -L $HOME/.claude/settings.json ]] || fail "link replaced"
 [[ $(jq -r .env.PEON_PLATFORM "$tmp/case/elsewhere/settings.json") == ssh ]] || fail "target not merged"
 
+begin "hooks the base registers are listed until they are linked"
+mkdir -p "$HOME/.claude/hooks"
+[[ $(unlinked_claude_hooks "$dotfiles" | tr '\n' ' ') == "prefer-jj.sh publish-gate.sh " ]] || fail "listed '$(unlinked_claude_hooks "$dotfiles" | tr '\n' ' ')'"
+ln -s "$dotfiles/claude/.claude/hooks/prefer-jj.sh" "$HOME/.claude/hooks/prefer-jj.sh"
+[[ $(unlinked_claude_hooks "$dotfiles") == publish-gate.sh ]] || fail "listed '$(unlinked_claude_hooks "$dotfiles")' with prefer-jj.sh linked"
+ln -s "$dotfiles/claude/.claude/hooks/publish-gate.sh" "$HOME/.claude/hooks/publish-gate.sh"
+[[ -z $(unlinked_claude_hooks "$dotfiles") ]] || fail "listed '$(unlinked_claude_hooks "$dotfiles")' with both linked"
+
 peon_dir() { echo "$HOME/.claude/hooks/peon-ping"; }
 
 # A peon source whose install.sh records its arguments and SSH_CONNECTION, then writes a fresh install

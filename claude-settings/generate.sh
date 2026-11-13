@@ -19,6 +19,20 @@ else
 	new=$(jq . "$BASE")
 fi
 
+# Claude runs on when a hook's script is missing, so a gate registered here but never stowed would guard nothing
+HOOKS_SRC="$(dirname "$BASE")/../claude/.claude/hooks"
+missing=()
+while IFS= read -r name; do
+	if [[ -e $HOOKS_SRC/$name && ! -x ~/.claude/hooks/$name ]]; then
+		missing+=("$name")
+	fi
+done < <(jq -r '[.hooks[]?[]?.hooks[]?.command // empty | capture("^~/\\.claude/hooks/(?<n>[^/ ]+)( |$)").n] | unique[]' <<<"$new")
+if ((${#missing[@]})); then
+	echo "$OUT not written: these hooks are registered but not linked into ~/.claude/hooks: ${missing[*]}" >&2
+	echo "Run install.sh, or stow the claude package, then rerun." >&2
+	exit 1
+fi
+
 # Older setups stowed settings.json as a symlink into the repo
 [[ -L $OUT ]] && rm "$OUT"
 

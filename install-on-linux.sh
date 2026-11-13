@@ -118,6 +118,18 @@ merge_box_settings() {
 	rm -f "$out"
 }
 
+# Lists the hooks settings.base.json registers from this repo that are not linked into ~/.claude/hooks
+unlinked_claude_hooks() {
+	local dotfiles=$1 name
+	jq -r '[.hooks[]?[]?.hooks[]?.command // empty | capture("^~/\\.claude/hooks/(?<n>[^/ ]+)( |$)").n] | unique[]' \
+		"$dotfiles/claude-settings/settings.base.json" |
+		while IFS= read -r name; do
+			if [[ -e $dotfiles/claude/.claude/hooks/$name && ! -x $HOME/.claude/hooks/$name ]]; then
+				echo "$name"
+			fi
+		done
+}
+
 if [[ -n ${INSTALL_ON_LINUX_FUNCTIONS_ONLY:-} ]]; then return 0; fi
 
 DOTFILES=${DOTFILES:-$(cd "$(dirname "$0")" && pwd)}
@@ -255,7 +267,13 @@ install_peon_ping "$tmp" || echo "warning: peon-ping $PEON_VERSION not installed
 if command -v jq >/dev/null; then
 	fill_peon_title_script "$DOTFILES" || echo "warning: peon notification_title_script not set" >&2
 	quiet_peon_defaults || echo "warning: peon categories left at peon's defaults" >&2
-	merge_box_settings "$DOTFILES" || echo "warning: box settings merge failed" >&2
+	# The merge registers these hooks; claude-settings/generate.sh says why an unlinked one stops it
+	unlinked=$(unlinked_claude_hooks "$DOTFILES" | tr '\n' ' ') || true
+	if [[ -z $unlinked ]]; then
+		merge_box_settings "$DOTFILES" || echo "warning: box settings merge failed" >&2
+	else
+		echo "warning: box settings not merged; hooks not linked into ~/.claude/hooks: $unlinked" >&2
+	fi
 else
 	echo "warning: no jq; peon title and box settings not set up" >&2
 fi

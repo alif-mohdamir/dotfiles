@@ -4,6 +4,8 @@
 def allowlist: [
 	["statusLine"], ["outputStyle"], ["permissions", "defaultMode"], ["skipAutoPermissionPrompt"],
 	["skillOverrides"], ["effortLevel"], ["feedbackDrafts"], ["theme"], ["model"],
+	# Only commit: a box may set attribution.pr itself, and base leaves the PR footer on
+	["attribution", "commit"],
 	["extraKnownMarketplaces", "compound-engineering-plugin"],
 	["enabledPlugins", "compound-engineering@compound-engineering-plugin"]
 ];

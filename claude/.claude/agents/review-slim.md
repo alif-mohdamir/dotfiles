@@ -21,6 +21,11 @@ Rules:
   fixture input must survive every layer before the one under test, including library
   re-validation. Treat the test's doc comment about which layer answered as a claim to
   verify.
+- When a finding depends on input from the other side of a contract (a producer, consumer
+  or caller in another PR or repo that the change description links), read that code too,
+  with `gh` if it isn't in the review root. Downgrade or drop a finding the real
+  counterpart can't trigger, and say which code you checked. If you can't reach it, keep
+  the finding and say the input was not checked.
 - `file:line` per finding.
 - Report every finding with an inline `[c:NN s:LVL]` tag — confidence `0–100`, severity `low|med|high`. They're independent: a high-confidence typo is `[c:90 s:low]`, a plausible auth bypass is `[c:60 s:high]`.
   - **Confidence:** 0–25 false positive / pre-existing; 26–50 nitpick; 51–75 plausible; 76–100 confirmed.

@@ -17,8 +17,16 @@ requests"); this skill covers only the comment text.
 ```
 
 The subject is the finding in one sentence. The discussion, when needed, gives the reason,
-the location if the comment isn't inline, and what to change. Put code changes in a GitHub
-`suggestion` block when the fix is a direct replacement.
+the location if the comment isn't inline, and what to change (see below). Put code changes
+in a GitHub `suggestion` block when the fix is a direct replacement. A suggestion block
+replaces every line the comment is anchored to, and an empty one deletes them all, so anchor
+it to exactly the lines that change.
+
+End the discussion with the action you want, phrased to match the decoration. For
+`blocking`, ask for the change directly. For `non-blocking` and `if-minor`, offer it as a
+suggestion ("It might be worth...", "One option is..."), give alternatives when there are
+several, and say when it matters if there's a natural point, such as before a dependent
+change ships.
 
 The bolded label counts as structure under the prose rules, the same as a heading. Bold
 nothing else.

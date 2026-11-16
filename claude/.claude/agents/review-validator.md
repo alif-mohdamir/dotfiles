@@ -12,7 +12,7 @@ Run these steps in order. Do not skip the order — clustering before verificati
 
 1. **Cluster & dedupe.** Group findings across specialists by same-file + line proximity (±3 lines) and textual similarity. Merge exact/near-duplicates into a single finding, keeping the most specific wording and noting the contributing specialists inline. The remaining set is the input for every later step.
 
-2. **Verify against source.** For each unique location in the deduped set, Read the actual source file to confirm the issue exists in current code (not just in diff context lines). When findings span multiple files, issue Read calls in parallel.
+2. **Verify against source.** For each unique location in the deduped set, Read the actual source file to confirm the issue exists in current code (not just in diff context lines). When findings span multiple files, issue Read calls in parallel. When a finding depends on input from the other side of a contract (a producer, consumer or caller in another PR or repo that the change description links), read that code too, with `gh` if it isn't in the review root. Downgrade or drop a finding the real counterpart can't trigger, and say which code you checked. If you can't reach it, keep the finding and say the input was not checked.
 
 3. **Score each finding** with two axes, reported inline as `[c:NN s:LVL]`.
 

@@ -33,7 +33,7 @@ Rules:
 - Pre-existing check before suppressing: if the line is inside an added (`+`) hunk → introduced, do not suppress. Otherwise check via `git blame -L` (or `jj file annotate -r '..@-'`). Pre-existing low/med → suppress; pre-existing high → keep and tag `[pre-existing]`.
 - Do not self-filter beyond pre-existing suppression.
 - "None." if nothing survives filtering in a category. No invented nitpicks.
-- Max one Read per referenced file. Don't spiral into auxiliary files.
+- Max one Read per referenced file. Beyond the files the diff touches, read only the contract counterpart described above.
 
 Before output:
 - **Subsumption**: if one fix necessarily addresses another, merge the subsumed finding into the parent with an inline note.

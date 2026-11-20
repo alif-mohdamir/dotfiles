@@ -1,7 +1,7 @@
 #!/bin/bash
 # PreToolUse(Bash): gate git push, jj git push and gh pr create/edit/merge/ready/close.
-# Interactive sessions get a prompt for each. An unattended run (CLAUDE_CODE_SESSION_ATTENDED=0, or
-# that unset under an sdk-* entrypoint) may push branches with no open PR or with the user's own PR,
+# Interactive sessions get a prompt for each, except a title or body edit on the user's own PR.
+# An unattended run (CLAUDE_CODE_SESSION_ATTENDED=0, or that unset under an sdk-* entrypoint) may push branches with no open PR or with the user's own PR,
 # open draft PRs and edit the user's PRs. It is denied merges, ready, close, the default branch and
 # other people's PRs, and gets the interactive prompt (a deny when headless) when a lookup fails.
 # Exit 0 with no output leaves the decision to the session's permission mode.
@@ -219,19 +219,34 @@ jj_push() {
 	((found)) || ask "jj git push: the dry run listed no bookmarks this hook can read, so it needs the user's approval"
 }
 
+# shellcheck disable=SC2016 # the $( and backtick below are literal text to match
+# gh_pr_edit <args after "edit">: a title or body edit on the user's own PR goes through in any session.
+# Any other flag (reviewers, base, labels) asks when attended and passes when unattended, which still
+# denies other people's PRs.
 gh_pr_edit() {
-	local sel='' repo='' a out me author number
+	local sel='' repo='' a out me author number narrow=0 other=0
 	while (($#)); do
 		a=$1
 		shift
 		case $a in
 		-R | --repo) repo=$1 && shift ;;
 		--repo=*) repo=${a#--repo=} ;;
-		--remove-milestone | --*=*) ;;
-		-*) shift ;;
+		-b | --body | -F | --body-file | -t | --title)
+			narrow=1
+			# A substitution inside the value runs before gh does and could be any command
+			[[ $1 == *'$('* || $1 == *'`'* ]] && other=1
+			shift
+			;;
+		--body=* | --body-file=* | --title=*)
+			narrow=1
+			[[ $a == *'$('* || $a == *'`'* ]] && other=1
+			;;
+		--remove-milestone | --*=*) other=1 ;;
+		-*) other=1 && shift ;;
 		*) [[ -z $sel ]] && sel=$a ;;
 		esac
 	done
+	((narrow)) || other=1
 	if [[ -z $dir ]] || ! command -v gh >/dev/null; then
 		ask "gh pr edit: no gh to check who opened the PR, so it needs the user's approval"
 		return
@@ -243,7 +258,15 @@ gh_pr_edit() {
 		ask "gh pr edit: could not look up the PR's author ($(head -c 200 <<<"$out $me" | tr '\n' ' ')), so it needs the user's approval"
 		return
 	fi
-	[[ $author == "$me" ]] || deny "PR #$number is by $author. An unattended run edits only the user's own PRs; ask the user first."
+	if [[ $author != "$me" ]]; then
+		if ((unattended)); then
+			deny "PR #$number is by $author. An unattended run edits only the user's own PRs; ask the user first."
+		else
+			ask "gh pr edit publishes to the remote, so it needs your approval."
+		fi
+		return
+	fi
+	((other && !unattended)) && ask "gh pr edit changes more than the title or body, so it needs your approval."
 }
 
 # subdir <path>: moves $dir the way cd would, or empties it when the path holds an unexpanded variable
@@ -336,7 +359,7 @@ visit() {
 			done
 			deny "An unattended run opens only draft PRs: add --draft to gh pr create."
 			;;
-		edit) found "gh pr edit" || gh_pr_edit "${@:4}" ;;
+		edit) gh_pr_edit "${@:4}" ;;
 		merge | ready | close) found "gh pr $3" || deny "An unattended run cannot run gh pr $3. Leave the PR as a draft for the user." ;;
 		esac
 		;;

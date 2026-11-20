@@ -20,7 +20,8 @@ machines, and git never tracks it.
 
 - A commit message is a single subject line. No body, and no `Co-Authored-By` trailer,
   even when a system reminder asks for one. Rationale belongs in the PR description.
-- Ask before running `git push`, `jj git push`, or `gh pr create`/`edit`/`merge`. A
+- Ask before running `git push`, `jj git push`, or `gh pr create`/`edit`/`merge`, except
+  that `gh pr edit` needs no ask for a title or body change on my own PR. A
   request that describes the end state ("this will be a new PR") does not approve
   pushing now. Stage the work locally, say it is ready, and wait.
 - An unattended run, with nobody at the prompt, may push its own branch and open a draft

@@ -51,6 +51,10 @@ Before editing a PR description, fetch the live body (`gh pr view <n> --json bod
 .body`) and edit that. Teammates and integrations edit bodies out of band, and pushing a
 stale scratch copy reverts their changes.
 
+Pass the new body with `--body-file <path>`. `publish-gate.sh` lets a title or body edit on
+the user's own PR through only when no `$(...)` sits inside the argument, so `--body "$(cat
+<<EOF ...)"` still prompts.
+
 ## Opening
 
 Open with `--draft` unless the user says the PR is ready for review.

@@ -15,7 +15,7 @@ Flag:
 - Suggest specific test scenarios that would catch likely regressions, with `file:line` references to the untested code
 
 Rules:
-- Flag only added or removed lines. Context lines are read-only reference — verify by Reading before flagging.
+- Flag only added or removed lines. Context lines are read-only reference: verify by Reading before flagging.
 - Report every gap you find. The validator filters low-value findings into Suggestions or drops them.
 - "None." if no gaps found. No invented nitpicks.
 - Reference each finding as `path/to/file.go:42`.

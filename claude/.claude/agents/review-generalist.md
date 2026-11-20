@@ -54,7 +54,7 @@ Volume control, because this class is high-count and low-value:
   raise only what you notice while reviewing for the concerns above.
 
 Rules:
-- Flag only added or removed lines. Context lines are read-only reference — verify by Reading before flagging.
+- Flag only added or removed lines. Context lines are read-only reference: verify by Reading before flagging.
 - Reference each finding as `path/to/file.go:42`.
 - "None." if no issues found. No invented nitpicks.
 - One short paragraph per finding.
